@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blood Mart - Login & Verification</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-top: 80px;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 420px;
+            padding: 35px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: saturate(180%) blur(20px);
+            border-radius: 24px;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--glass-border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .auth-header h2 {
+            font-size: 1.8rem;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .auth-header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Tabs for Mobile/Email */
+        .auth-tabs {
+            display: flex;
+            background: #E9E9EA;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 25px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .auth-tab.active {
+            background: white;
+            color: var(--text-main);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .digilocker-btn {
+            background: #F1F8FF;
+            color: #0056B3;
+            border: 1px solid #CDE2F5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 14px;
+            border-radius: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .digilocker-btn:hover {
+            background: #E4F1FE;
+        }
+
+        .digilocker-btn img {
+            height: 24px;
+        }
+
+        .auth-step {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .step-hidden {
+            display: none !important;
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 20px 0;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #D1D1D6;
+        }
+        .divider:not(:empty)::before { margin-right: .5em; }
+        .divider:not(:empty)::after { margin-left: .5em; }
+
+    </style>
+</head>
+<body>
+    <!-- Standard Navigation -->
+    <nav class="navbar">
+        <div class="logo">
+            <div class="logo-icon"></div>
+            <h1>Blood<span> Mart</span></h1>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="index.html#search-donors">Emergency Search</a></li>
+        </ul>
+    </nav>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            
+            <!-- Step 1: Login -->
+            <div id="step-login" class="auth-step">
+                <div class="auth-header">
+                    <h2>Welcome Back</h2>
+                    <p>Enter your details to access the portal</p>
+                </div>
+
+                <div class="auth-tabs">
+                    <div class="auth-tab active" id="tab-mobile" onclick="switchLoginType('mobile')">Mobile Number</div>
+                    <div class="auth-tab" id="tab-email" onclick="switchLoginType('email')">Email ID</div>
+                </div>
+
+                <form id="loginForm">
+                    <div class="form-group" id="mobileInputGroup">
+                        <label>Mobile Number</label>
+                        <div class="phone-input">
+                            <span class="country-code">+91</span>
+                            <input type="tel" id="loginMobile" placeholder="9876543210" pattern="[0-9]{10}">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group step-hidden" id="emailInputGroup">
+                        <label>Email ID</label>
+                        <input type="email" id="loginEmail" placeholder="you@example.com">
+                    </div>
+
+                    <div class="form-group step-hidden" id="otpGroup">
+                        <label>Enter OTP</label>
+                        <input type="text" id="loginOtp" placeholder="4-digit OTP" maxlength="4">
+                    </div>
+
+                    <button type="button" id="getOtpBtn" class="btn-primary" style="width: 100%;">Get OTP</button>
+                    <button type="submit" id="loginBtn" class="btn-primary step-hidden" style="width: 100%;">Login to Blood Mart</button>
+                </form>
+            </div>
+
+            <!-- Step 2: DigiLocker Aadhaar Verification -->
+            <div id="step-kyc" class="auth-step step-hidden">
+                <div class="auth-header">
+                    <h2>Verify Identity</h2>
+                    <p>Blood Mart requires verified donors for safety.</p>
+                </div>
+
+                <div style="text-align: center; margin-bottom: 25px;">
+                    <div style="font-size: 3rem; margin-bottom: 10px;">🔐</div>
+                    <p style="color: var(--text-main); font-weight: 500;">Link your Aadhaar <br>via DigiLocker</p>
+                </div>
+
+                <div class="form-group" id="aadharGroup">
+                    <label>Aadhaar Number</label>
+                    <input type="text" id="aadharInput" placeholder="1234 5678 9012" maxlength="14" style="text-align: center; letter-spacing: 2px;">
+                </div>
+
+                <div class="divider">OR</div>
+
+                <button class="digilocker-btn" id="digilockerBtn" type="button">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0056B3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    Fetch from DigiLocker
+                </button>
+                
+                <button type="button" id="verifyAadhaarBtn" class="btn-primary" style="width: 100%; margin-top: 15px; display: none;">Verify & Proceed</button>
+            </div>
+
+             <!-- Step 3: Success -->
+             <div id="step-success" class="auth-step step-hidden">
+                <div class="auth-header" style="margin-top: 20px;">
+                    <div style="width: 60px; height: 60px; background: #34C759; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 20px;">✓</div>
+                    <h2>Verification Complete</h2>
+                    <p>Your Aadhaar is verified. You are now a certified Blood Mart Donor!</p>
+                </div>
+                <button type="button" onclick="window.location.href='index.html'" class="btn-primary" style="width: 100%; margin-top: 20px;">Go to Dashboard</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="login.js"></script>
+</body>
+</html>

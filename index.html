@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blood Mart - Real-Time Blood Donor Matching</title>
+    <meta name="description"
+        content="Blood Mart connects verified blood donors with recipients in emergencies instantly. Fast, verified, life-saving.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="logo">
+            <div class="logo-icon"></div>
+            <h1>Blood<span> Mart</span></h1>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#home" class="active">Home</a></li>
+            <li><a href="#search-donors">Emergency Search</a></li>
+            <li><a href="#register">Register as Donor</a></li>
+        </ul>
+        <button class="btn-primary login-btn" onclick="window.location.href='login.html'">Login / Verified Portal</button>
+    </nav>
+
+    <!-- Hero Section -->
+    <header id="home" class="hero">
+        <div class="hero-content">
+            <span class="badge">Saving Lives Daily</span>
+            <h2 class="hero-title">Find a Blood Donor <span>Instantly</span></h2>
+            <p class="hero-desc">Connecting verified blood donors with recipients in real-time. Skip the social media
+                chaos, find a match within a 10km radius instantly.</p>
+            <div class="action-buttons">
+                <button class="btn-primary urgent-btn" onclick="scrollToSection('search-donors')">I Need Blood
+                    Now</button>
+                <button class="btn-secondary" onclick="scrollToSection('register')">Become a Donor</button>
+            </div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <h3>80%</h3>
+                    <p>Faster Search</p>
+                </div>
+                <div class="stat-item">
+                    <h3>100%</h3>
+                    <p>Verified Users</p>
+                </div>
+                <div class="stat-item">
+                    <h3>3x</h3>
+                    <p>Quicker Response</p>
+                </div>
+            </div>
+        </div>
+        <div class="hero-image-container" style="flex-direction: column; gap: 25px; align-items: flex-end;">
+            <!-- Alert Card 1 -->
+            <div class="animate-card" style="--anim-delay: 0.1s;">
+                <div class="app-mockup glass-panel" style="padding: 18px;">
+                    <div class="mockup-header" style="margin-bottom: 12px; padding-bottom: 8px;">
+                        <h4 style="font-size: 0.95rem;">Emergency Alert</h4>
+                        <span class="status-pulse"></span>
+                    </div>
+                    <div class="request-card" style="margin-bottom: 12px; padding: 12px; background: transparent; border: none; box-shadow: none;">
+                        <div class="blood-type" style="width: 44px; height: 44px; font-size: 1.1rem;">O-</div>
+                        <div class="req-details">
+                            <p class="req-title" style="font-size: 0.9rem;">Urgent Need at City Hospital</p>
+                            <p class="req-dist" style="font-size: 0.75rem;">2.4 km away • 15 mins ago</p>
+                        </div>
+                    </div>
+                    <div class="mockup-btn" style="padding: 10px; font-size: 0.9rem;">Accept Request</div>
+                </div>
+            </div>
+
+            <!-- Alert Card 2 -->
+            <div class="animate-card" style="--anim-delay: 0.3s; margin-right: 30px;">
+                <div class="app-mockup glass-panel" style="padding: 18px;">
+                    <div class="mockup-header" style="margin-bottom: 12px; padding-bottom: 8px;">
+                        <h4 style="font-size: 0.95rem;">Emergency Alert</h4>
+                        <span class="status-pulse"></span>
+                    </div>
+                    <div class="request-card" style="margin-bottom: 12px; padding: 12px; background: transparent; border: none; box-shadow: none;">
+                        <div class="blood-type" style="width: 44px; height: 44px; font-size: 1.1rem; background: linear-gradient(135deg, #007AFF, #5856D6);">AB+</div>
+                        <div class="req-details">
+                            <p class="req-title" style="font-size: 0.9rem;">Accident Victim at Apollo</p>
+                            <p class="req-dist" style="font-size: 0.75rem;">4.1 km away • 2 mins ago</p>
+                        </div>
+                    </div>
+                    <div class="mockup-btn" style="padding: 10px; font-size: 0.9rem;">Accept Request</div>
+                </div>
+            </div>
+
+            <!-- Alert Card 3 -->
+            <div class="animate-card" style="--anim-delay: 0.5s;">
+                <div class="app-mockup glass-panel" style="padding: 18px;">
+                    <div class="mockup-header" style="margin-bottom: 12px; padding-bottom: 8px;">
+                        <h4 style="font-size: 0.95rem;">Emergency Alert</h4>
+                        <span class="status-pulse"></span>
+                    </div>
+                    <div class="request-card" style="margin-bottom: 12px; padding: 12px; background: transparent; border: none; box-shadow: none;">
+                        <div class="blood-type" style="width: 44px; height: 44px; font-size: 1.1rem; background: linear-gradient(135deg, #FF9500, #FFCC00);">B-</div>
+                        <div class="req-details">
+                            <p class="req-title" style="font-size: 0.9rem;">Surgery Backup at Max</p>
+                            <p class="req-dist" style="font-size: 0.75rem;">1.2 km away • 22 mins ago</p>
+                        </div>
+                    </div>
+                    <div class="mockup-btn" style="padding: 10px; font-size: 0.9rem;">Accept Request</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Emergency Search Section -->
+    <section id="search-donors" class="glass-section">
+        <div class="section-header">
+            <h2>Emergency <span>Search</span></h2>
+            <p>Find verified donors closest to your current location.</p>
+        </div>
+        <div class="search-container glass-panel">
+            <form id="searchForm" class="search-form">
+                <div class="form-group">
+                    <label for="bloodGroup">Select Blood Group Needed</label>
+                    <select id="bloodGroup" required>
+                        <option value="" disabled selected>Select Blood Group</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="location">Hospital Location</label>
+                    <div class="input-with-icon">
+                        <input type="text" id="location" placeholder="e.g. AIIMS Delhi" required>
+                        <button type="button" class="gps-btn" id="gpsBtn">📍</button>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary search-btn">Scan for Donors</button>
+            </form>
+
+            <div id="searchResults" class="search-results hidden">
+                <div class="radar-scan">
+                    <div class="radar-spinner"></div>
+                    <p>Scanning 10km radius...</p>
+                </div>
+            </div>
+
+            <div id="map" class="hidden"
+                style="height: 300px; width: 100%; border-radius: 12px; margin-top: 20px; border: 1px solid var(--glass-border); z-index: 1;">
+            </div>
+        </div>
+    </section>
+
+    <!-- Register Donor Section -->
+    <section id="register" class="glass-section alt">
+        <div class="section-header">
+            <h2>Be a <span>Hero</span></h2>
+            <p>Register as a certified donor. OTP verification required.</p>
+        </div>
+        <div class="register-container glass-panel">
+            <form id="registerForm" class="register-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="regName">Full Name</label>
+                        <input type="text" id="regName" placeholder="John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regBg">Your Blood Group</label>
+                        <select id="regBg" required>
+                            <option value="" disabled selected>Blood Group</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="regPhone">Phone Number</label>
+                    <div class="phone-input">
+                        <span class="country-code">+91</span>
+                        <input type="tel" id="regPhone" placeholder="9999999999" pattern="[0-9]{10}" required>
+                    </div>
+                </div>
+                <div class="form-group toggle-group">
+                    <label class="switch">
+                        <input type="checkbox" id="regAvailability" checked>
+                        <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-label">I am currently available to donate</span>
+                </div>
+                <button type="button" id="sendOtpBtn" class="btn-primary">Send OTP</button>
+
+                <div id="otpSection" class="hidden otp-section">
+                    <div class="form-group">
+                        <label for="otpCode">Enter OTP</label>
+                        <input type="text" id="otpCode" placeholder="Enter 4-digit code" maxlength="4">
+                    </div>
+                    <button type="submit" class="btn-primary confirm-btn">Verify & Register</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">Notification Action Successful!</div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
