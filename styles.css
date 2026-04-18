@@ -1,5 +1,5 @@
 :root {
-    --primary-red: #ff8fa3;
+    --primary-red: #972439;
     --blood-red: #ffb3c6;
     --dark-bg: #fff0f3;
     --panel-bg: rgba(255, 255, 255, 0.6);
@@ -111,6 +111,7 @@ h2 span {
     display: flex;
     align-items: center;
     gap: 10px;
+    cursor: pointer;
 }
 
 .logo-icon {
@@ -141,12 +142,15 @@ h2 span {
     color: var(--text-muted);
     text-decoration: none;
     font-weight: 500;
-    transition: color 0.3s ease;
+    padding: 8px 14px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
 }
 
 .nav-links a:hover,
 .nav-links a.active {
     color: var(--text-main);
+    background: rgba(0, 0, 0, 0.04);
 }
 
 /* Hero Section */
@@ -640,4 +644,163 @@ input:checked+.slider:before {
         flex-direction: column;
         gap: 0;
     }
+}
+
+/* ── Chat Modal ── */
+.chat-modal {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 340px;
+    height: 480px;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    display: none;
+    flex-direction: column;
+    z-index: 9999;
+    overflow: hidden;
+    animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid var(--glass-border);
+}
+
+.chat-modal.open {
+    display: flex;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.chat-header {
+    background: linear-gradient(135deg, var(--primary-red), #ff4d6d);
+    color: #fff;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+}
+
+.chat-header span {
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chat-header span::before {
+    content: '';
+    display: block;
+    width: 10px;
+    height: 10px;
+    background: #34C759;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+.chat-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: #fff;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.chat-close:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #f8f9fa;
+}
+
+.chat-msg {
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 0.9rem;
+    max-width: 85%;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.chat-msg.system {
+    align-self: center;
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    border-radius: 20px;
+    max-width: 100%;
+}
+
+.chat-msg.received {
+    align-self: flex-start;
+    background: #fff;
+    color: var(--text-main);
+    border: 1px solid rgba(0,0,0,0.05);
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+
+.chat-msg.sent {
+    align-self: flex-end;
+    background: var(--primary-red);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 2px 8px rgba(214, 40, 57, 0.2);
+}
+
+.chat-input-area {
+    padding: 14px;
+    background: #fff;
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    gap: 10px;
+}
+
+.chat-input-area input {
+    flex: 1;
+    border: 1px solid #e0e0e0;
+    padding: 10px 16px;
+    border-radius: 20px;
+    outline: none;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+}
+
+.chat-input-area input:focus {
+    border-color: var(--primary-red);
+}
+
+.chat-input-area button {
+    background: var(--primary-red);
+    color: #fff;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.chat-input-area button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(214, 40, 57, 0.3);
 }

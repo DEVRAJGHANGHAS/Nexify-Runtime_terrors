@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Phone | Blood Finder</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="api.js"></script>
+    <style>
+        :root {
+            --crimson: #D62839;
+            --crimson-dark: #B51F2E;
+            --crimson-light: #FF4D5A;
+            --dark: #1A1A2E;
+            --gray: #6B7280;
+            --light-gray: #F3F4F6;
+            --white: #FFFFFF;
+            --success: #10B981;
+            --warning: #F59E0B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, var(--dark) 0%, #16213E 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .verify-container {
+            background: var(--white);
+            border-radius: 24px;
+            padding: 48px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .verify-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .verify-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--crimson) 0%, var(--crimson-light) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .verify-icon svg {
+            width: 40px;
+            height: 40px;
+            color: white;
+        }
+
+        .verify-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 8px;
+        }
+
+        .verify-header p {
+            color: var(--gray);
+            font-size: 16px;
+        }
+
+        .phone-display {
+            background: var(--light-gray);
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .phone-display span {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--dark);
+            letter-spacing: 2px;
+        }
+
+        .otp-inputs {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .otp-input {
+            width: 56px;
+            height: 64px;
+            border: 2px solid #E5E7EB;
+            border-radius: 12px;
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            color: var(--dark);
+            transition: all 0.3s ease;
+        }
+
+        .otp-input:focus {
+            outline: none;
+            border-color: var(--crimson);
+            box-shadow: 0 0 0 4px rgba(214, 40, 57, 0.1);
+            transform: scale(1.05);
+        }
+
+        .otp-input.filled {
+            border-color: var(--success);
+            background: #ECFDF5;
+        }
+
+        .timer-section {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .timer {
+            font-size: 14px;
+            color: var(--gray);
+        }
+
+        .timer span {
+            color: var(--crimson);
+            font-weight: 600;
+        }
+
+        .resend-link {
+            background: none;
+            border: none;
+            color: var(--crimson);
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: underline;
+            display: none;
+        }
+
+        .resend-link.visible {
+            display: inline;
+        }
+
+        .resend-link:disabled {
+            color: var(--gray);
+            cursor: not-allowed;
+        }
+
+        .verify-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--crimson) 0%, var(--crimson-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .verify-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(214, 40, 57, 0.4);
+        }
+
+        .verify-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .verify-btn.loading {
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #FEF2F2;
+            color: #DC2626;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .error-message.visible {
+            display: flex;
+        }
+
+        .success-message {
+            background: #ECFDF5;
+            color: #059669;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .success-message.visible {
+            display: flex;
+        }
+
+        .change-number {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .change-number a {
+            color: var(--gray);
+            font-size: 14px;
+            text-decoration: none;
+        }
+
+        .change-number a:hover {
+            color: var(--crimson);
+        }
+
+        /* Demo mode banner */
+        .demo-banner {
+            background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+            border: 1px solid #F59E0B;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .demo-banner p {
+            font-size: 13px;
+            color: #92400E;
+            margin: 0;
+        }
+
+        .demo-otp {
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--crimson);
+            letter-spacing: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="verify-container">
+        <div class="verify-header">
+            <div class="verify-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+            </div>
+            <h1>Verify Your Phone</h1>
+            <p>Enter the 6-digit code sent to your phone</p>
+        </div>
+
+        <div class="demo-banner" id="demoBanner" style="display: none;">
+            <p>📱 Demo Mode - Check your console for OTP</p>
+            <p class="demo-otp" id="demoOtp"></p>
+        </div>
+
+        <div class="phone-display">
+            <span id="phoneNumber">+91 **********</span>
+        </div>
+
+        <div class="error-message" id="errorMessage">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
+            <span id="errorText"></span>
+        </div>
+
+        <div class="success-message" id="successMessage">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            <span id="successText"></span>
+        </div>
+
+        <div class="otp-inputs">
+            <input type="text" class="otp-input" maxlength="1" data-index="0" inputmode="numeric">
+            <input type="text" class="otp-input" maxlength="1" data-index="1" inputmode="numeric">
+            <input type="text" class="otp-input" maxlength="1" data-index="2" inputmode="numeric">
+            <input type="text" class="otp-input" maxlength="1" data-index="3" inputmode="numeric">
+            <input type="text" class="otp-input" maxlength="1" data-index="4" inputmode="numeric">
+            <input type="text" class="otp-input" maxlength="1" data-index="5" inputmode="numeric">
+        </div>
+
+        <div class="timer-section">
+            <p class="timer">Resend code in <span id="countdown">02:00</span></p>
+            <button class="resend-link" id="resendBtn">Resend Code</button>
+        </div>
+
+        <button class="verify-btn" id="verifyBtn">
+            <span>Verify Phone Number</span>
+        </button>
+
+        <div class="change-number">
+            <a href="register.html">← Change Phone Number</a>
+        </div>
+    </div>
+
+    <script>
+        // Get data from URL or localStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        const phone = urlParams.get('phone') || localStorage.getItem('tempPhone') || '';
+        const userId = urlParams.get('userId') || localStorage.getItem('tempUserId') || '';
+        const demoOtp = urlParams.get('demoOtp') || '';
+
+        // Display phone number
+        if (phone) {
+            document.getElementById('phoneNumber').textContent = '+91 ' + phone;
+        }
+
+        // Show demo OTP if available
+        if (demoOtp) {
+            document.getElementById('demoBanner').style.display = 'block';
+            document.getElementById('demoOtp').textContent = demoOtp;
+        }
+
+        // OTP Input handling
+        const otpInputs = document.querySelectorAll('.otp-input');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const resendBtn = document.getElementById('resendBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const successMessage = document.getElementById('successMessage');
+        const successText = document.getElementById('successText');
+
+        let otpValue = '';
+        let countdownInterval;
+
+        // Handle input
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                const value = e.target.value;
+                
+                // Only allow numbers
+                if (!/^\d*$/.test(value)) {
+                    e.target.value = '';
+                    return;
+                }
+
+                if (value) {
+                    input.classList.add('filled');
+                    // Move to next input
+                    if (index < otpInputs.length - 1) {
+                        otpInputs[index + 1].focus();
+                    }
+                } else {
+                    input.classList.remove('filled');
+                }
+
+                updateOTPValue();
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    otpInputs[index - 1].focus();
+                }
+            });
+
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text').slice(0, 6);
+                const digits = pastedData.replace(/\D/g, '').split('');
+                
+                digits.forEach((digit, i) => {
+                    if (otpInputs[i]) {
+                        otpInputs[i].value = digit;
+                        otpInputs[i].classList.add('filled');
+                    }
+                });
+
+                updateOTPValue();
+                
+                // Focus on next empty input or last input
+                const nextEmpty = Array.from(otpInputs).find(inp => !inp.value);
+                if (nextEmpty) {
+                    nextEmpty.focus();
+                } else {
+                    otpInputs[otpInputs.length - 1].focus();
+                }
+            });
+        });
+
+        function updateOTPValue() {
+            otpValue = Array.from(otpInputs).map(input => input.value).join('');
+        }
+
+        // Countdown timer
+        function startCountdown() {
+            let seconds = 120; // 2 minutes
+            const countdownEl = document.getElementById('countdown');
+            const timerText = document.querySelector('.timer');
+            
+            resendBtn.classList.remove('visible');
+            timerText.style.display = 'block';
+
+            clearInterval(countdownInterval);
+            countdownInterval = setInterval(() => {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                countdownEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+                if (seconds <= 0) {
+                    clearInterval(countdownInterval);
+                    timerText.style.display = 'none';
+                    resendBtn.classList.add('visible');
+                }
+                seconds--;
+            }, 1000);
+        }
+
+        startCountdown();
+
+        // Verify button
+        verifyBtn.addEventListener('click', async () => {
+            if (otpValue.length !== 6) {
+                showError('Please enter all 6 digits');
+                return;
+            }
+
+            setLoading(true);
+            hideMessages();
+
+            try {
+                const response = await fetch('http://localhost:5000/api/otp/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: phone,
+                        otp: otpValue,
+                        userId: userId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess('Phone verified successfully!');
+                    
+                    // Clear temp data
+                    localStorage.removeItem('tempPhone');
+                    localStorage.removeItem('tempUserId');
+
+                    // Redirect after short delay
+                    setTimeout(() => {
+                        window.location.href = 'login.html?verified=true';
+                    }, 1500);
+                } else {
+                    showError(data.message || 'Invalid OTP');
+                }
+            } catch (error) {
+                showError('Network error. Please try again.');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // Resend button
+        resendBtn.addEventListener('click', async () => {
+            setLoading(true);
+            hideMessages();
+
+            try {
+                const response = await fetch('http://localhost:5000/api/otp/resend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: phone,
+                        userId: userId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess('OTP resent successfully!');
+                    startCountdown();
+                    
+                    // Update demo OTP if shown
+                    if (data.demoOtp) {
+                        document.getElementById('demoOtp').textContent = data.demoOtp;
+                    }
+                } else {
+                    showError(data.message || 'Failed to resend OTP');
+                }
+            } catch (error) {
+                showError('Network error. Please try again.');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        function setLoading(loading) {
+            if (loading) {
+                verifyBtn.innerHTML = '<div class="spinner"></div>';
+                verifyBtn.disabled = true;
+            } else {
+                verifyBtn.innerHTML = '<span>Verify Phone Number</span>';
+                verifyBtn.disabled = false;
+            }
+        }
+
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.classList.add('visible');
+        }
+
+        function showSuccess(message) {
+            successText.textContent = message;
+            successMessage.classList.add('visible');
+        }
+
+        function hideMessages() {
+            errorMessage.classList.remove('visible');
+            successMessage.classList.remove('visible');
+        }
+
+        // Auto-verify if all inputs filled
+        otpInputs[otpInputs.length - 1].addEventListener('input', () => {
+            if (otpValue.length === 6) {
+                verifyBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>

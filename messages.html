@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages | Blood Finder</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+        <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+        <script src="api.js"></script>
+        <script src="socket.js"></script>
+        <script src="logout.js"></script>
+    <style>
+        .messages-container {
+            max-width: 800px;
+            margin: 6em auto 2em;
+            padding: 20px;
+        }
+
+        .msg-list {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        .msg-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 10px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 12px;
+        }
+
+        .msg-item:last-child {
+            border-bottom: none;
+        }
+
+        .msg-item:hover {
+            background: rgba(214, 40, 57, 0.05);
+            transform: translateX(5px);
+        }
+
+        .msg-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-red), #ff4d6d);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-right: 15px;
+            box-shadow: 0 4px 10px rgba(214, 40, 57, 0.2);
+        }
+
+        .msg-info {
+            flex: 1;
+        }
+
+        .msg-info h4 {
+            margin: 0 0 5px;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .msg-info p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 400px;
+        }
+
+        .msg-time {
+            font-size: 0.8rem;
+            color: #999;
+            font-weight: 500;
+        }
+
+        .empty-msgs {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='index.html'">
+            <div class="logo-icon"></div>
+            <h1>Blood<span> Finder</span></h1>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="messages.html" class="active">Messages</a></li>
+            <li><a href="index.html#search-donors">Emergency Search</a></li>
+        </ul>
+        <button class="btn-secondary" onclick="confirmLogout()">Logout</button>
+    </nav>
+
+    <div class="messages-container">
+        <h2 style="margin-bottom: 25px; font-weight: 700; color: var(--text-main);">Your Messages Center</h2>
+        <div class="msg-list" id="msgList">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+
+    <!-- Chat Modal Wrapper (reusing existing app.js logic) -->
+    <div id="chatModal" class="chat-modal">
+        <div class="chat-header">
+            <span id="chatName">Recipient</span>
+            <button class="chat-close" onclick="closeChat(); setTimeout(() => location.reload(), 300)">✕</button>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <form class="chat-input-area" id="chatForm">
+            <input type="text" id="chatInput" placeholder="Type a message..." required>
+            <button type="submit">➤</button>
+        </form>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const chats = JSON.parse(localStorage.getItem('bf_chats') || '{}');
+            const list = document.getElementById('msgList');
+            const names = Object.keys(chats);
+
+            if (names.length === 0) {
+                list.innerHTML = '<div class="empty-msgs">No messages yet. Send an alert to a donor to start a chat!</div>';
+            } else {
+                let html = '';
+                names.forEach(name => {
+                    const msgs = chats[name];
+                    const lastMsg = msgs[msgs.length - 1];
+                    const initials = name.charAt(0).toUpperCase();
+                    html += `
+                        <div class="msg-item" onclick="openChat('${name}')">
+                            <div class="msg-avatar">${initials}</div>
+                            <div class="msg-info">
+                                <h4>${name}</h4>
+                                <p>${lastMsg.type === 'sent' ? 'You: ' : ''}${lastMsg.text}</p>
+                            </div>
+                            <div class="msg-time">${lastMsg.time || ''}</div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html;
+            }
+
+            // Auto-open chat if coming via redirect parameter
+            const params = new URLSearchParams(window.location.search);
+            const chatToOpen = params.get('chat');
+            if (chatToOpen) {
+                window.history.replaceState({}, document.title, "messages.html");
+                openChat(chatToOpen);
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blood Finder - Donor Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+        <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+        <script src="api.js"></script>
+        <script src="socket.js"></script>
+        <script src="logout.js"></script>
+    <style>
+        .dashboard-container {
+            padding: 100px 5% 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            min-height: calc(100vh - 100px);
+        }
+
+        .welcome-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .welcome-text h2 {
+            font-size: 2.5rem;
+        }
+
+        .welcome-text p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .points-badge {
+            background: linear-gradient(135deg, #FFD700, #FDB931);
+            color: #8B6508;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(253, 185, 49, 0.4);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        .dash-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .dash-card {
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .dash-card:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .dash-card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .dash-card:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dash-card h3 {
+            font-size: 1.3rem;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 10px;
+        }
+
+        .stat-big {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--primary-red);
+            line-height: 1;
+        }
+
+        .reward-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s;
+        }
+
+        .reward-item:hover {
+            background: rgba(255, 255, 255, 0.8);
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .reward-info h4 {
+            font-size: 1.05rem;
+            margin-bottom: 2px;
+        }
+
+        .reward-info p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .reward-cost {
+            font-weight: 700;
+            color: #FDB931;
+            background: rgba(253, 185, 49, 0.1);
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .redeem-btn {
+            background: #FDB931;
+            color: #8B6508;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--font-stack);
+        }
+
+        .redeem-btn:hover:not(:disabled) {
+            background: #FFD700;
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(253, 185, 49, 0.4);
+        }
+
+        .redeem-btn:disabled {
+            background: #e0e0e0;
+            color: #9e9e9e;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .req-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .req-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid rgba(255, 143, 163, 0.3);
+            border-radius: 12px;
+            background: rgba(255, 143, 163, 0.05);
+            border-left: 4px solid var(--primary-red);
+            transition: all 0.2s;
+        }
+
+        .req-item:hover {
+            background: rgba(255, 143, 163, 0.1);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='index.html'">
+            <div class="logo-icon"></div>
+            <h1>Blood<span> Finder</span></h1>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="#" class="active">Dashboard</a></li>
+            <li><a href="messages.html">Messages</a></li>
+            <li><a href="index.html#search-donors">Emergency Search</a></li>
+        </ul>
+        <button class="btn-secondary" onclick="confirmLogout()">Logout</button>
+    </nav>
+
+    <div class="dashboard-container">
+        <div class="welcome-section">
+            <div class="welcome-text">
+                <h2>Welcome Back, <span style="color: var(--primary-red);">Hero</span>!</h2>
+                <p>Your dashboard and reward center.</p>
+            </div>
+            <div class="points-badge" id="pointsBadge">
+                🪙 <span id="userPoints" style="transition: all 0.3s;">350</span> Drops
+            </div>
+        </div>
+
+        <div class="dash-grid">
+            <!-- Profile & Health -->
+            <div class="dash-card glass-panel" id="profileCard">
+                <h3>Profile & Health</h3>
+                <form id="profileForm" style="display: flex; flex-direction: column; gap: 15px; margin-top: 10px;">
+                    <div>
+                        <label for="userBloodGroup"
+                            style="display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem;">Your
+                            Blood Group</label>
+                        <select id="userBloodGroup" required
+                            style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.8); font-family: var(--font-stack);">
+                            <option value="" disabled selected>Select Blood Group</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="lastDonated"
+                            style="display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem;">Last
+                            Donated Date</label>
+                        <input type="date" id="lastDonated"
+                            style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.8); font-family: var(--font-stack);">
+                    </div>
+                    <div>
+                        <label for="medicalConditions"
+                            style="display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem;">Medical
+                            Conditions (if any)</label>
+                        <input type="text" id="medicalConditions" placeholder="e.g. None"
+                            style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.8); font-family: var(--font-stack);">
+                    </div>
+                    <button type="submit" class="btn-primary" style="margin-top: 5px; padding: 10px;">Save
+                        Profile</button>
+                </form>
+            </div>
+            <!-- Impact Stats -->
+            <div class="dash-card glass-panel">
+                <h3>Your Impact</h3>
+                <div style="display: flex; gap: 30px; align-items: center; margin-top: 10px;">
+                    <div>
+                        <div class="stat-big">2</div>
+                        <p style="color: var(--text-muted); font-weight: 500;">Donations</p>
+                    </div>
+                    <div>
+                        <div class="stat-big">6</div>
+                        <p style="color: var(--text-muted); font-weight: 500;">Lives Saved</p>
+                    </div>
+                </div>
+                <p
+                    style="font-size: 0.95rem; color: var(--text-main); margin-top: 15px; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 8px;">
+                    Next eligible donation: <strong style="color: #34C759;">Available Now</strong></p>
+                <button class="btn-primary" style="margin-top: auto;"
+                    onclick="showToast('Your availability has been broadcasted to nearby hospitals. 🏥')">I'm Available
+                    to Donate</button>
+            </div>
+
+            <!-- Active Requests -->
+            <div class="dash-card glass-panel">
+                <h3>Urgent Requests Near You</h3>
+                <div class="req-list" id="activeRequestsList">
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Please save your Profile with a Blood Group
+                        to see matching requests.</p>
+                </div>
+            </div>
+
+            <!-- Rewards -->
+            <div class="dash-card glass-panel" style="grid-column: 1 / -1;">
+                <h3>Reward Center</h3>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">Redeem your 'Drops' for exclusive health and
+                    lifestyle benefits.</p>
+
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 15px;">
+                    <div class="reward-item">
+                        <div class="reward-info">
+                            <h4>Free Full Body Checkup</h4>
+                            <p>Apollo Diagnostics</p>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <span class="reward-cost">500 Drops</span>
+                            <button class="redeem-btn" onclick="redeemReward(500, 'Full Body Checkup')"
+                                id="btn-500">Redeem</button>
+                        </div>
+                    </div>
+
+                    <div class="reward-item">
+                        <div class="reward-info">
+                            <h4>₹500 Pharmacy Voucher</h4>
+                            <p>PharmEasy / 1mg</p>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <span class="reward-cost">250 Drops</span>
+                            <button class="redeem-btn" onclick="redeemReward(250, 'Pharmacy Voucher')"
+                                id="btn-250">Redeem</button>
+                        </div>
+                    </div>
+
+                    <div class="reward-item">
+                        <div class="reward-info">
+                            <h4>Free Movie Ticket</h4>
+                            <p>PVR Cinemas</p>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <span class="reward-cost">150 Drops</span>
+                            <button class="redeem-btn" onclick="redeemReward(150, 'Movie Ticket')"
+                                id="btn-150">Redeem</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- Chat Modal -->
+    <div id="chatModal" class="chat-modal">
+        <div class="chat-header">
+            <span id="chatName">Recipient</span>
+            <button class="chat-close" onclick="closeChat()">✕</button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <!-- Messages will be injected here -->
+        </div>
+        <form class="chat-input-area" id="chatForm">
+            <input type="text" id="chatInput" placeholder="Type a message..." required>
+            <button type="submit">➤</button>
+        </form>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+
+</html>
