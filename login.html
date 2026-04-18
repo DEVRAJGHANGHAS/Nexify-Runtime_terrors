@@ -11,7 +11,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-        <script src="api.js"></script>
     <style>
         /* ===== AUTH PAGE VARIABLES ===== */
         :root {
@@ -38,7 +37,10 @@
 
         body {
             font-family: 'Outfit', sans-serif;
-            background: #fff;
+            background: #fff0f3;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(255, 143, 163, 0.15) 0%, transparent 35%),
+                radial-gradient(circle at 85% 30%, rgba(255, 179, 198, 0.2) 0%, transparent 35%);
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -52,7 +54,7 @@
         /* ===== LEFT PANEL ===== */
         .auth-left {
             flex: 1;
-            background: linear-gradient(145deg, var(--panel-dark) 0%, var(--panel-mid) 50%, #3d0a12 100%);
+            background: transparent;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -62,17 +64,8 @@
             overflow: hidden;
         }
 
-        /* Animated radial glow orb */
         .auth-left::before {
-            content: '';
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(214, 40, 57, 0.3) 0%, transparent 65%);
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            animation: breathe 5s ease-in-out infinite;
+            display: none;
         }
 
         @keyframes breathe {
@@ -112,7 +105,7 @@
             position: relative;
             z-index: 2;
             text-align: center;
-            color: white;
+            color: #4a4a4a;
         }
 
         /* Big blood drop hero icon */
@@ -144,12 +137,12 @@
         }
 
         .left-content h1 span {
-            color: var(--crimson-light);
+            color: var(--crimson);
         }
 
         .left-content p {
             font-size: 1.05rem;
-            color: rgba(255, 255, 255, 0.65);
+            color: #828282;
             line-height: 1.7;
             max-width: 340px;
             margin: 0 auto 40px;
@@ -164,8 +157,8 @@
 
         .stat-box {
             text-align: center;
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(0, 0, 0, 0.05);
             border-radius: 16px;
             padding: 16px 22px;
             backdrop-filter: blur(10px);
@@ -174,13 +167,13 @@
         .stat-box .num {
             font-size: 1.8rem;
             font-weight: 800;
-            color: var(--crimson-light);
+            color: var(--crimson);
             display: block;
         }
 
         .stat-box .lbl {
             font-size: 0.78rem;
-            color: rgba(255, 255, 255, 0.55);
+            color: #828282;
             margin-top: 3px;
             display: block;
         }
@@ -194,7 +187,9 @@
             justify-content: center;
             align-items: center;
             padding: 60px 50px;
-            background: #fff;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(12px);
+            border-left: 1px solid rgba(0, 0, 0, 0.05);
             position: relative;
         }
 
@@ -803,24 +798,25 @@
                 <div id="mobileInputGroup">
                     <div class="phone-float-group">
                         <div class="cc-badge">🇮🇳 +91</div>
-                        <div class="float-group">
+                        <div class="float-group" style="margin-bottom:0;">
                             <input type="tel" id="loginMobile" placeholder=" " pattern="[0-9]{10}" maxlength="10" autocomplete="tel">
                             <span class="float-label">Mobile Number</span>
                         </div>
+                    </div>
+                    <div style="display:flex; gap:12px; margin-top:16px;">
+                        <button class="btn-full btn-crimson" id="getOtpSmsBtn" onclick="handleGetOtp('sms')" style="flex:1; padding: 14px;">💬 SMS OTP</button>
+                        <button class="btn-full btn-outline" id="getOtpCallBtn" onclick="handleGetOtp('call')" style="flex:1; border-color:var(--crimson); color:var(--crimson); padding: 14px;">☎️ Call OTP</button>
                     </div>
                 </div>
 
                 <!-- Email Input -->
                 <div id="emailInputGroup" class="step-hidden">
-                    <div class="float-group">
+                    <div class="float-group" style="margin-bottom:0;">
                         <input type="email" id="loginEmail" placeholder=" " autocomplete="email">
                         <span class="float-label">Email Address</span>
                     </div>
+                    <button class="btn-full btn-crimson" id="getOtpMailBtn" onclick="handleGetOtp('email')" style="margin-top:16px; padding: 14px;">✉️ Mail OTP</button>
                 </div>
-
-                <button class="btn-full btn-crimson" id="getOtpBtn" onclick="handleGetOtp()">
-                    Get OTP →
-                </button>
 
                 <div class="or-divider">or</div>
 
@@ -1019,11 +1015,16 @@
         }
 
         // ===== HANDLE GET OTP =====
-        window.handleGetOtp = function() {
-            const mobile = document.getElementById('loginMobile').value;
-            const email = document.getElementById('loginEmail').value;
-            const btn = document.getElementById('getOtpBtn');
+        window.handleGetOtp = async function(method = 'sms') {
+            const mobile = document.getElementById('loginMobile').value.trim();
+            const email = document.getElementById('loginEmail').value.trim();
             const type = window.currentLoginType || 'mobile';
+
+            let btnId = 'getOtpSmsBtn';
+            if (method === 'call') btnId = 'getOtpCallBtn';
+            if (method === 'email') btnId = 'getOtpMailBtn';
+            
+            const btn = document.getElementById(btnId);
 
             if (type === 'mobile' && mobile.length < 10) {
                 showToast('⚠️ Enter a valid 10-digit mobile number');
@@ -1036,18 +1037,103 @@
                 return;
             }
 
-            btn.innerHTML = `<div class="spinner"></div> Sending OTP...`;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<div class="spinner${method==='call'?' spinner-dark':''}"></div> Checking...`;
             btn.disabled = true;
 
-            setTimeout(() => {
-                const target = type === 'mobile' ? `+91 ${mobile}` : email;
-                document.getElementById('otpSubtitle').textContent = `Code sent to ${target}`;
-                document.getElementById('otpSentMsg').innerHTML = `OTP sent to <strong>${target}</strong>. Use <strong>1234</strong> to continue.`;
-                btn.innerHTML = 'Get OTP →';
+            // ── CHECK DATABASE: Does this user exist? ──
+            try {
+                const checkRes = await fetch('/api/user/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mobile: type === 'mobile' ? mobile : '',
+                        email: type === 'email' ? email : ''
+                    })
+                });
+                const checkData = await checkRes.json();
+
+                if (!checkData.success || !checkData.exists) {
+                    // ── USER NOT FOUND → show "create account" suggestion ──
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+
+                    // Remove any previous banner
+                    const oldBanner = document.getElementById('notFoundBanner');
+                    if (oldBanner) oldBanner.remove();
+
+                    const banner = document.createElement('div');
+                    banner.id = 'notFoundBanner';
+                    banner.innerHTML = `
+                        <div style="
+                            background: linear-gradient(135deg, rgba(255,77,109,0.08), rgba(214,40,57,0.06));
+                            border: 1.5px solid rgba(214,40,57,0.25);
+                            border-radius: 16px;
+                            padding: 20px;
+                            margin-bottom: 20px;
+                            animation: slideInRight 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+                        ">
+                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                                <span style="font-size:1.5rem;">🔍</span>
+                                <strong style="color:#D62839;font-size:1rem;">Account Not Found!</strong>
+                            </div>
+                            <p style="color:#555;font-size:0.88rem;margin-bottom:14px;line-height:1.5;">
+                                No account found with this ${type === 'mobile' ? 'mobile number' : 'email address'}. 
+                                Would you like to create a new account?
+                            </p>
+                            <a href="register.html" 
+                               style="
+                                    display:inline-flex; align-items:center; gap:8px;
+                                    background:linear-gradient(135deg,#D62839,#ff4d6d);
+                                    color:#fff; font-weight:700; font-size:0.9rem;
+                                    padding:12px 24px; border-radius:12px;
+                                    text-decoration:none;
+                                    box-shadow:0 4px 18px rgba(214,40,57,0.3);
+                                    transition:all 0.3s ease;
+                               "
+                               onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(214,40,57,0.4)'"
+                               onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 18px rgba(214,40,57,0.3)'"
+                            >
+                                ✨ Create Account Now →
+                            </a>
+                        </div>
+                    `;
+                    const stepLogin = document.getElementById('step-login');
+                    stepLogin.insertBefore(banner, stepLogin.querySelector('.auth-footer-link'));
+                    
+                    showToast('❌ No account found! Please create an account first.');
+                    return;
+                }
+
+                // ── USER FOUND → store user data and proceed to OTP ──
+                window._loginUserData = checkData.user;
+
+                btn.innerHTML = `<div class="spinner${method==='call'?' spinner-dark':''}"></div> Sending OTP...`;
+
+                setTimeout(() => {
+                    const target = type === 'mobile' ? `+91 ${mobile}` : email;
+                    let viaText = method === 'call' ? 'via Phone Call' : (method === 'email' ? 'via Email' : 'via SMS');
+                    
+                    document.getElementById('otpSubtitle').textContent = `Code sent to ${target} ${viaText}`;
+                    document.getElementById('otpSentMsg').innerHTML = `OTP sent to <strong>${target}</strong> ${viaText}. Use <strong>1234</strong> to continue.`;
+                    
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+
+                    // Remove any "not found" banner
+                    const oldBanner = document.getElementById('notFoundBanner');
+                    if (oldBanner) oldBanner.remove();
+
+                    goToStep('step-login', 'step-otp', 2);
+                    setTimeout(() => document.getElementById('otp0').focus(), 350);
+                }, 1200);
+
+            } catch (err) {
+                console.error('Login check error:', err);
+                btn.innerHTML = originalText;
                 btn.disabled = false;
-                goToStep('step-login', 'step-otp', 2);
-                setTimeout(() => document.getElementById('otp0').focus(), 350);
-            }, 1400);
+                showToast('⚠️ Server not reachable. Please make sure the server is running.');
+            }
         };
 
         // ===== HANDLE VERIFY OTP =====
@@ -1085,24 +1171,12 @@
         // ===== DIGILOCKER FLOW =====
         window.handleDigilocker = function() {
             const btn = document.getElementById('digilockerBtn');
-            btn.innerHTML = `<div class="spinner spinner-dark"></div> Authenticating with DigiLocker...`;
+            btn.innerHTML = `<div class="spinner spinner-dark"></div> Redirecting to DigiLocker...`;
             btn.disabled = true;
 
             setTimeout(() => {
-                const inp = document.getElementById('aadharInput');
-                inp.value = 'XXXX XXXX 9821';
-                inp.style.background = '#EFF8FF';
-                inp.style.borderColor = '#0056B3';
-                inp.disabled = true;
-
-                btn.innerHTML = `✅ Linked to DigiLocker`;
-                btn.style.background = '#dcf5e7';
-                btn.style.borderColor = '#86efac';
-                btn.style.color = '#166534';
-
-                document.getElementById('verifyAadhaarBtn').style.display = 'flex';
-                showToast('🔒 Data fetched from DigiLocker securely');
-            }, 2000);
+                window.location.href = '/auth/digilocker';
+            }, 500);
         };
 
         // ===== AADHAAR MANUAL FORMAT =====
@@ -1113,25 +1187,65 @@
         });
 
         // ===== HANDLE VERIFY AADHAAR =====
-        window.handleVerifyAadhaar = function() {
+        window.handleVerifyAadhaar = async function() {
             const btn = document.getElementById('verifyAadhaarBtn');
-            btn.innerHTML = `<div class="spinner"></div> Verifying Identity...`;
+            btn.innerHTML = `<div class="spinner"></div> Restoring your data...`;
             btn.disabled = true;
 
-            setTimeout(() => {
-                // Write session to localStorage
-                const phone = document.getElementById('phoneInput')?.value ||
-                              document.getElementById('phone')?.value || '';
-                localStorage.setItem('bf_session', JSON.stringify({
-                    name:      'Verified User',
-                    phone:     phone,
-                    blood:     'B+',
-                    verified:  true,
-                    loginTime: Date.now()
-                }));
+            // Use user data fetched from SQL database during login check
+            const userObj = window._loginUserData || {
+                name: 'Verified User',
+                blood_group: 'B+',
+                mobile: document.getElementById('loginMobile')?.value || '',
+                email: document.getElementById('loginEmail')?.value || ''
+            };
+
+            // Write basic session to localStorage
+            localStorage.setItem('bf_session', JSON.stringify({
+                name:      userObj.name,
+                phone:     userObj.mobile,
+                email:     userObj.email,
+                blood:     userObj.blood_group,
+                verified:  true,
+                loginTime: Date.now()
+            }));
+            localStorage.setItem('userName', userObj.name);
+            localStorage.setItem('userBloodGroup', userObj.blood_group);
+            localStorage.setItem('userMobile', userObj.mobile);
+            localStorage.setItem('userEmail', userObj.email);
+
+            // ── RESTORE ALL SAVED PROGRESS FROM DATABASE ──
+            try {
+                const res = await fetch('/api/user/load-progress', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mobile: userObj.mobile, email: userObj.email })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    // Restore profile fields
+                    const p = data.profile;
+                    if (p.address)            localStorage.setItem('userAddress', p.address);
+                    if (p.last_donated)       localStorage.setItem('lastDonated', p.last_donated);
+                    if (p.medical_conditions) localStorage.setItem('medicalConditions', p.medical_conditions);
+
+                    // Restore all chats
+                    if (data.chats && Object.keys(data.chats).length > 0) {
+                        localStorage.setItem('bf_chats', JSON.stringify(data.chats));
+                    }
+
+                    console.log('✅ All progress restored from database');
+                    showToast('✅ Welcome back! All your data has been restored.');
+                } else {
+                    showToast('✅ Identity verified!');
+                }
+            } catch (err) {
+                console.error('Progress restore error:', err);
                 showToast('✅ Identity verified!');
-                goToStep('step-kyc', 'step-success', 3);
-            }, 1600);
+            }
+
+            goToStep('step-kyc', 'step-success', 3);
         };
 
         // ===== GOOGLE AUTH MOCK =====

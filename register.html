@@ -10,7 +10,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-        <script src="api.js"></script>
     <style>
         :root {
             --crimson: #D62839;
@@ -29,7 +28,15 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Outfit', sans-serif; background: #fff; min-height: 100vh; overflow-x: hidden; }
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            background: #fff0f3; 
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(255, 143, 163, 0.15) 0%, transparent 35%),
+                radial-gradient(circle at 85% 30%, rgba(255, 179, 198, 0.2) 0%, transparent 35%);
+            min-height: 100vh; 
+            overflow-x: hidden; 
+        }
 
         /* ===== SPLIT LAYOUT ===== */
         .auth-page { display: flex; min-height: 100vh; }
@@ -37,7 +44,7 @@
         /* ===== LEFT PANEL ===== */
         .auth-left {
             flex: 1;
-            background: linear-gradient(145deg, var(--panel-dark) 0%, var(--panel-mid) 50%, #3d0a12 100%);
+            background: transparent;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -48,15 +55,7 @@
         }
 
         .auth-left::before {
-            content: '';
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(214, 40, 57, 0.3) 0%, transparent 65%);
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            animation: breathe 5s ease-in-out infinite;
+            display: none;
         }
 
         @keyframes breathe {
@@ -74,7 +73,7 @@
             100% { transform: translateY(-100vh) translateX(30px); opacity: 0; }
         }
 
-        .left-content { position: relative; z-index: 2; text-align: center; color: white; }
+        .left-content { position: relative; z-index: 2; text-align: center; color: #4a4a4a; }
 
         .hero-drop { width: 100px; height: 110px; margin: 0 auto 30px; }
         .hero-drop svg {
@@ -94,10 +93,10 @@
             letter-spacing: -1px;
             margin-bottom: 16px;
         }
-        .left-content h1 span { color: var(--crimson-light); }
+        .left-content h1 span { color: var(--crimson); }
         .left-content p {
             font-size: 1.05rem;
-            color: rgba(255, 255, 255, 0.65);
+            color: #828282;
             line-height: 1.7;
             max-width: 340px;
             margin: 0 auto 40px;
@@ -110,8 +109,8 @@
             align-items: center;
             gap: 14px;
             padding: 14px 18px;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(0, 0, 0, 0.05);
             border-radius: 14px;
             margin-bottom: 10px;
             backdrop-filter: blur(10px);
@@ -132,11 +131,11 @@
             display: block;
             font-size: 0.88rem;
             font-weight: 700;
-            color: white;
+            color: #4a4a4a;
         }
         .benefit-text span {
             font-size: 0.77rem;
-            color: rgba(255,255,255,0.5);
+            color: #828282;
         }
 
         /* ===== RIGHT PANEL ===== */
@@ -148,7 +147,9 @@
             justify-content: center;
             align-items: center;
             padding: 50px 50px 60px;
-            background: #fff;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(12px);
+            border-left: 1px solid rgba(0, 0, 0, 0.05);
             overflow-y: auto;
         }
 
@@ -536,6 +537,12 @@
                     <span class="float-label">Full Name</span>
                 </div>
 
+                <!-- Date of Birth -->
+                <div class="float-group" style="margin-top:18px;">
+                    <input type="date" id="regDOB" placeholder=" " required>
+                    <span class="float-label">Date of Birth</span>
+                </div>
+
                 <!-- Blood Group Grid -->
                 <div class="bg-label">Select your Blood Group</div>
                 <div class="blood-group-grid" id="bgGrid">
@@ -553,15 +560,23 @@
                 <!-- Mobile -->
                 <div class="phone-float-group">
                     <div class="cc-badge">🇮🇳 +91</div>
-                    <div class="float-group">
+                    <div class="float-group" style="margin-bottom:0;">
                         <input type="tel" id="regMobile" placeholder=" " pattern="[0-9]{10}" maxlength="10">
                         <span class="float-label">Mobile Number</span>
                     </div>
                 </div>
 
-                <button class="btn-full btn-crimson" id="getRegOtpBtn" onclick="handleGetRegOtp()">
-                    Send OTP →
-                </button>
+                <!-- Email Input -->
+                <div class="float-group" style="margin-top:18px;">
+                    <input type="email" id="regEmail" placeholder=" " autocomplete="email">
+                    <span class="float-label">Email Address</span>
+                </div>
+
+                <div style="display:flex; gap:12px; margin-top:20px; margin-bottom: 20px;">
+                    <button class="btn-full btn-crimson" id="getRegOtpSmsBtn" onclick="handleGetRegOtp('sms')" style="flex:1; padding:12px; font-size:0.9rem;">💬 SMS OTP</button>
+                    <button class="btn-full btn-outline" id="getRegOtpCallBtn" onclick="handleGetRegOtp('call')" style="flex:1; border-color:var(--crimson); color:var(--crimson); padding:12px; font-size:0.9rem;">☎️ Call OTP</button>
+                    <button class="btn-full btn-outline" id="getRegOtpMailBtn" onclick="handleGetRegOtp('email')" style="flex:1; border-color:var(--crimson); color:var(--crimson); padding:12px; font-size:0.9rem;">✉️ Mail OTP</button>
+                </div>
 
                 <div class="auth-footer-link">
                     Already have an account? <a href="login.html">Login →</a>
@@ -758,28 +773,218 @@
         initOtpBoxes('rotp', 'verifyRegOtpBtn');
 
         // ===== GET OTP =====
-        function handleGetRegOtp() {
+        async function handleGetRegOtp(method = 'sms') {
             const name = document.getElementById('regName').value.trim();
+            const dob = document.getElementById('regDOB').value;
             const blood = document.getElementById('regBlood').value;
-            const mobile = document.getElementById('regMobile').value;
+            const mobile = document.getElementById('regMobile').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
 
             if (!name) { showToast('⚠️ Please enter your full name'); document.getElementById('regName').focus(); return; }
-            if (!blood) { showToast('⚠️ Please select your blood group'); return; }
-            if (mobile.length < 10) { showToast('⚠️ Enter a valid 10-digit mobile number'); document.getElementById('regMobile').focus(); return; }
+            if (!dob) { showToast('⚠️ Please enter your date of birth'); document.getElementById('regDOB').focus(); return; }
 
-            const btn = document.getElementById('getRegOtpBtn');
-            btn.innerHTML = `<div class="spinner"></div> Sending OTP...`;
+            // Age check
+            const birthDate = new Date(dob);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+
+            if (age < 18) {
+                showToast('🚫 Age must be at least 18 years to register.');
+                return;
+            }
+            if (!blood) { showToast('⚠️ Please select your blood group'); return; }
+            if (!mobile || mobile.length < 10) { 
+                showToast('⚠️ Enter a valid 10-digit mobile number'); 
+                document.getElementById('regMobile').focus(); 
+                return; 
+            }
+            if (!email || !email.includes('@')) { 
+                showToast('⚠️ Enter a valid email address'); 
+                document.getElementById('regEmail').focus(); 
+                return; 
+            }
+
+            let btnId = 'getRegOtpSmsBtn';
+            if (method === 'call') btnId = 'getRegOtpCallBtn';
+            if (method === 'email') btnId = 'getRegOtpMailBtn';
+            const btn = document.getElementById(btnId);
+
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<div class="spinner${method!=='sms'?' spinner-dark':''}"></div> Checking...`;
             btn.disabled = true;
 
-            setTimeout(() => {
-                document.getElementById('regOtpSubtitle').textContent = `Code sent to +91 ${mobile}`;
-                btn.innerHTML = 'Send OTP →';
+            // ── CHECK DATABASE FOR DUPLICATES ──
+            try {
+                // Check mobile
+                const mobileCheck = await fetch('/api/user/check-duplicate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ field: 'mobile', value: mobile })
+                });
+                const mobileData = await mobileCheck.json();
+
+                // Check email
+                const emailCheck = await fetch('/api/user/check-duplicate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ field: 'email', value: email })
+                });
+                const emailData = await emailCheck.json();
+
+                // Remove previous banners
+                const oldBanner = document.getElementById('duplicateBanner');
+                if (oldBanner) oldBanner.remove();
+
+                if (mobileData.exists || emailData.exists) {
+                    // ── DUPLICATE FOUND ──
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+
+                    let dupMsg = '';
+                    if (mobileData.exists && emailData.exists) {
+                        dupMsg = 'This <strong>mobile number</strong> and <strong>email address</strong> are already registered!';
+                    } else if (mobileData.exists) {
+                        dupMsg = 'This <strong>mobile number</strong> is already registered!';
+                    } else {
+                        dupMsg = 'This <strong>email address</strong> is already registered!';
+                    }
+
+                    const banner = document.createElement('div');
+                    banner.id = 'duplicateBanner';
+                    banner.innerHTML = `
+                        <div style="
+                            background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(220,38,38,0.05));
+                            border: 1.5px solid rgba(239,68,68,0.3);
+                            border-radius: 16px;
+                            padding: 20px;
+                            margin-bottom: 20px;
+                            animation: slideInRight 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+                        ">
+                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                                <span style="font-size:1.5rem;">🚫</span>
+                                <strong style="color:#dc2626;font-size:1rem;">Already Registered!</strong>
+                            </div>
+                            <p style="color:#555;font-size:0.88rem;margin-bottom:14px;line-height:1.5;">
+                                ${dupMsg}<br>Please login with your existing account.
+                            </p>
+                            <a href="login.html" 
+                               style="
+                                    display:inline-flex; align-items:center; gap:8px;
+                                    background:linear-gradient(135deg,#D62839,#ff4d6d);
+                                    color:#fff; font-weight:700; font-size:0.9rem;
+                                    padding:12px 24px; border-radius:12px;
+                                    text-decoration:none;
+                                    box-shadow:0 4px 18px rgba(214,40,57,0.3);
+                                    transition:all 0.3s ease;
+                               "
+                               onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(214,40,57,0.4)'"
+                               onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 18px rgba(214,40,57,0.3)'"
+                            >
+                                🔑 Login Instead →
+                            </a>
+                        </div>
+                    `;
+                    const stepReg = document.getElementById('step-register');
+                    stepReg.insertBefore(banner, stepReg.querySelector('.auth-footer-link'));
+
+                    showToast('🚫 This mobile number or email is already registered!');
+                    return;
+                }
+
+                // ── NO DUPLICATES → proceed to OTP ──
+                btn.innerHTML = `<div class="spinner${method!=='sms'?' spinner-dark':''}"></div> Sending OTP...`;
+
+                setTimeout(() => {
+                    const target = method === 'email' ? email : `+91 ${mobile}`;
+                    let viaText = method === 'call' ? 'via Phone Call' : (method === 'email' ? 'via Email' : 'via SMS');
+
+                    document.getElementById('regOtpSubtitle').textContent = `Code sent to ${target} ${viaText}`;
+                    
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+
+                    // Remove any duplicate banner
+                    const oldBanner = document.getElementById('duplicateBanner');
+                    if (oldBanner) oldBanner.remove();
+
+                    goToStep('step-register', 'step-reg-otp', 2);
+                    setTimeout(() => document.getElementById('rotp0').focus(), 350);
+                    showToast(`📲 OTP sent to ${target} ${viaText}`);
+                }, 1200);
+
+            } catch (err) {
+                console.error('Registration check error:', err);
+                btn.innerHTML = originalText;
                 btn.disabled = false;
-                goToStep('step-register', 'step-reg-otp', 2);
-                setTimeout(() => document.getElementById('rotp0').focus(), 350);
-                showToast(`📲 OTP sent to +91 ${mobile}`);
-            }, 1400);
+                showToast('⚠️ Server not reachable. Please make sure the server is running.');
+            }
         }
+
+        // ===== REAL-TIME DUPLICATE VALIDATION ON BLUR =====
+        let _mobileTimer = null;
+        let _emailTimer = null;
+
+        document.getElementById('regMobile')?.addEventListener('blur', async function() {
+            const mobile = this.value.trim();
+            if (mobile.length < 10) return;
+            
+            try {
+                const res = await fetch('/api/user/check-duplicate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ field: 'mobile', value: mobile })
+                });
+                const data = await res.json();
+                if (data.exists) {
+                    this.style.borderColor = '#ef4444';
+                    this.style.boxShadow = '0 0 0 4px rgba(239,68,68,0.2)';
+                    showToast('🚫 This mobile number is already registered!');
+                } else {
+                    this.style.borderColor = '#22c55e';
+                    this.style.boxShadow = '0 0 0 4px rgba(34,197,94,0.15)';
+                }
+            } catch(e) { /* server offline */ }
+        });
+
+        document.getElementById('regEmail')?.addEventListener('blur', async function() {
+            const email = this.value.trim();
+            if (!email || !email.includes('@')) return;
+            
+            try {
+                const res = await fetch('/api/user/check-duplicate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ field: 'email', value: email })
+                });
+                const data = await res.json();
+                if (data.exists) {
+                    this.style.borderColor = '#ef4444';
+                    this.style.boxShadow = '0 0 0 4px rgba(239,68,68,0.2)';
+                    showToast('🚫 This email address is already registered!');
+                } else {
+                    this.style.borderColor = '#22c55e';
+                    this.style.boxShadow = '0 0 0 4px rgba(34,197,94,0.15)';
+                }
+            } catch(e) { /* server offline */ }
+        });
+
+        // Reset border when user starts typing again
+        document.getElementById('regMobile')?.addEventListener('input', function() {
+            this.style.borderColor = '';
+            this.style.boxShadow = '';
+            const b = document.getElementById('duplicateBanner');
+            if (b) b.remove();
+        });
+        document.getElementById('regEmail')?.addEventListener('input', function() {
+            this.style.borderColor = '';
+            this.style.boxShadow = '';
+            const b = document.getElementById('duplicateBanner');
+            if (b) b.remove();
+        });
 
         // ===== VERIFY OTP =====
         function handleVerifyRegOtp() {
@@ -798,7 +1003,7 @@
             btn.disabled = true;
 
             setTimeout(() => {
-                showToast('✅ Account created! Now verify your identity.');
+                showToast('✅ OTP Verified! Now verify your identity.');
                 goToStep('step-reg-otp', 'step-kyc', 3);
                 btn.innerHTML = 'Create Account →';
                 btn.disabled = false;
@@ -815,23 +1020,23 @@
         // ===== DIGILOCKER =====
         function handleDigilocker() {
             const btn = document.getElementById('digilockerBtn');
-            btn.innerHTML = `<div class="spinner spinner-dark"></div> Authenticating...`;
+            btn.innerHTML = `<div class="spinner spinner-dark"></div> Authenticating via DigiLocker...`;
             btn.disabled = true;
 
+            // Simulate DigiLocker auth
             setTimeout(() => {
-                const inp = document.getElementById('aadharInput');
-                inp.value = 'XXXX XXXX 9821';
-                inp.style.background = '#EFF8FF';
-                inp.style.borderColor = '#0056B3';
-                inp.disabled = true;
+                const aadharInput = document.getElementById('aadharInput');
+                aadharInput.value = 'XXXX XXXX 9821';
+                aadharInput.style.background = '#E4F1FE';
+                aadharInput.style.borderColor = '#0056B3';
+                aadharInput.disabled = true;
 
-                btn.innerHTML = `✅ Linked to DigiLocker`;
-                btn.style.background = '#dcf5e7';
-                btn.style.borderColor = '#86efac';
-                btn.style.color = '#166534';
+                btn.innerHTML = '✅ Linked to DigiLocker';
+                btn.style.background = '#E4F1FE';
+                btn.style.pointerEvents = 'none';
 
                 document.getElementById('verifyAadhaarBtn').style.display = 'flex';
-                showToast('🔒 Aadhaar fetched securely from DigiLocker');
+                showToast('🔐 Data retrieved from DigiLocker securely.');
             }, 2000);
         }
 
@@ -841,30 +1046,66 @@
             if (val.length >= 12) document.getElementById('verifyAadhaarBtn').style.display = 'flex';
         });
 
-        // ===== VERIFY AADHAAR =====
-        function handleVerifyAadhaar() {
+        // ===== VERIFY AADHAAR & SAVE TO SQL DATABASE =====
+        async function handleVerifyAadhaar() {
             const btn = document.getElementById('verifyAadhaarBtn');
-            btn.innerHTML = `<div class="spinner"></div> Verifying Identity...`;
+            btn.innerHTML = `<div class="spinner"></div> Saving to Database...`;
             btn.disabled = true;
 
-            setTimeout(() => {
-                // Write session to localStorage
-                const name  = document.getElementById('fullName')?.value ||
-                              document.getElementById('regName')?.value  || 'New Donor';
-                const blood = document.getElementById('bloodGroup')?.value ||
-                              document.getElementById('regBlood')?.value  || 'B+';
-                const phone = document.getElementById('phoneNum')?.value  ||
-                              document.getElementById('regPhone')?.value  || '';
+            const name  = document.getElementById('regName')?.value?.trim() || 'New Donor';
+            const dob   = document.getElementById('regDOB')?.value || '';
+            const blood = document.getElementById('regBlood')?.value || 'B+';
+            const mobile = document.getElementById('regMobile')?.value?.trim() || '';
+            const email = document.getElementById('regEmail')?.value?.trim() || '';
+
+            try {
+                // ── SAVE TO SQL DATABASE ──
+                const res = await fetch('/api/user/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        dob: dob,
+                        mobile: mobile,
+                        email: email,
+                        blood_group: blood
+                    })
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    // Registration failed (duplicate detected at DB level)
+                    btn.innerHTML = 'Verify & Complete →';
+                    btn.disabled = false;
+                    showToast(data.message || '🚫 Registration failed!');
+                    return;
+                }
+
+                // ── SUCCESS → Write session to localStorage ──
                 localStorage.setItem('bf_session', JSON.stringify({
-                    name:      name  || 'New Donor',
-                    phone:     phone,
-                    blood:     blood || 'B+',
+                    name:      name,
+                    dob:       dob,
+                    phone:     mobile,
+                    email:     email,
+                    blood:     blood,
                     verified:  true,
                     loginTime: Date.now()
                 }));
-                showToast('✅ Identity verified! Welcome, Donor!');
+                localStorage.setItem('userName', name);
+                localStorage.setItem('userDOB', dob);
+                localStorage.setItem('userBloodGroup', blood);
+                localStorage.setItem('userMobile', mobile);
+                localStorage.setItem('userEmail', email);
+
+                showToast('✅ Account saved to database! Welcome, Donor!');
                 goToStep('step-kyc', 'step-success', 4);
-            }, 1600);
+
+            } catch (err) {
+                console.error('Registration error:', err);
+                btn.innerHTML = 'Verify & Complete →';
+                btn.disabled = false;
+                showToast('⚠️ Server error. Please make sure the server is running.');
+            }
         }
     </script>
 </body>

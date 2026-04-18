@@ -14,99 +14,61 @@ function showToast(message) {
     }, 3000);
 }
 
-// Store registration data temporarily
-let registrationData = {};
-
-// Handle Registration Flow - Send OTP
-document.getElementById('getRegOtpBtn')?.addEventListener('click', async () => {
+// Handle Registration Flow
+document.getElementById('getRegOtpBtn')?.addEventListener('click', () => {
     const mobile = document.getElementById('regMobile').value;
     const name = document.getElementById('regName').value;
-    const email = document.getElementById('regEmail')?.value;
-    const password = document.getElementById('regPassword')?.value;
-    const userType = document.querySelector('input[name="userType"]:checked')?.value || 'donor';
-    const blood = document.getElementById('regBlood')?.value;
-    const age = document.getElementById('regAge')?.value;
-    const weight = document.getElementById('regWeight')?.value;
-    const city = document.getElementById('regCity')?.value;
+    const blood = document.getElementById('regBlood').value;
 
-    // Basic validation
-    if (!name || !mobile || mobile.length < 10) {
-        showToast("Please fill all required fields correctly");
+    if (!name || !blood || mobile.length < 10) {
+        showToast("Please fill all fields correctly");
         return;
     }
 
-    if (userType === 'donor' && (!blood || !age || !weight)) {
-        showToast("Please fill all donor information");
+    const registeredUsers = JSON.parse(localStorage.getItem('bf_registered_users') || '[]');
+    if (registeredUsers.includes(mobile)) {
+        showToast('Account already exists. Please log in using your number.');
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 3000);
         return;
     }
-
-    // Store registration data
-    registrationData = {
-        name,
-        email: email || `${mobile}@bloodfinder.temp`,
-        password: password || Math.random().toString(36).slice(-8),
-        phone: mobile,
-        userType,
-        bloodType: blood,
-        age: age ? parseInt(age) : null,
-        weight: weight ? parseInt(weight) : null,
-        location: { city: city || '' }
-    };
 
     const btn = document.getElementById('getRegOtpBtn');
     btn.innerHTML = `<span class="radar-spinner" style="width: 20px; height: 20px; border-width: 2px; margin-right: 8px; animation-duration: 0.8s;"></span> Sending OTP...`;
-    btn.disabled = true;
-
-    try {
-        // First register the user (without phone verification)
-        const regResponse = await fetch('http://localhost:5000/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(registrationData)
-        });
-
-        const regData = await regResponse.json();
-
-        if (!regResponse.ok) {
-            throw new Error(regData.message || 'Registration failed');
-        }
-
-        // Store user ID for OTP verification
-        const userId = regData.user.id;
-        localStorage.setItem('tempUserId', userId);
-        localStorage.setItem('tempPhone', mobile);
-
-        // Send OTP
-        const otpResponse = await fetch('http://localhost:5000/api/otp/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                phone: mobile,
-                userId: userId
-            })
-        });
-
-        const otpData = await otpResponse.json();
-
-        if (otpData.success) {
-            // Redirect to OTP verification page
-            const demoOtpParam = otpData.demoOtp ? `&demoOtp=${otpData.demoOtp}` : '';
-            window.location.href = `verify-otp.html?phone=${mobile}&userId=${userId}${demoOtpParam}`;
-        } else {
-            throw new Error(otpData.message || 'Failed to send OTP');
-        }
-
-    } catch (error) {
-        showToast("❌ " + error.message);
-        btn.innerHTML = 'Get OTP on Mobile';
-        btn.disabled = false;
-    }
+    
+    setTimeout(() => {
+        btn.classList.add('step-hidden');
+        document.getElementById('regOtpGroup').classList.remove('step-hidden');
+        document.getElementById('verifyRegBtn').classList.remove('step-hidden');
+        
+        showToast(`OTP 1234 sent to +91 ${mobile}`);
+    }, 1200);
 });
 
-// Legacy form submission (for fallback)
 document.getElementById('registerForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
-    // This is now handled by the OTP flow above
+    const btn = document.getElementById('verifyRegBtn');
+    const otp = document.getElementById('regOtp').value;
+    
+    if (otp !== "1234") {
+        showToast("❌ Invalid OTP. Try 1234");
+        return;
+    }
+    
+    btn.innerHTML = `<span class="radar-spinner" style="width: 20px; height: 20px; border-width: 2px; margin-right: 8px; animation-duration: 0.8s;"></span> Verifying...`;
+    
+    setTimeout(() => {
+        showToast("✅ Account Created Successfully! Please verify identity.");
+        
+        // Transition to KYC/DigiLocker step directly
+        document.getElementById('step-register').classList.add('step-hidden');
+        setTimeout(() => {
+            document.getElementById('step-kyc').classList.remove('step-hidden');
+        }, 300);
+        
+        btn.innerHTML = "Verify & Create Account";
+    }, 1500);
 });
 
 // DigiLocker Mock Flow
@@ -147,6 +109,41 @@ document.getElementById('verifyAadhaarBtn')?.addEventListener('click', () => {
     btn.textContent = "Verifying Identity...";
 
     setTimeout(() => {
+        const mobile = document.getElementById('regMobile')?.value || '';
+        const name = document.getElementById('regName')?.value || 'Verified User';
+        const blood = document.getElementById('regBlood')?.value || 'B+';
+
+        // Add to database
+        const db = JSON.parse(localStorage.getItem('bf_database') || '[]');
+        if (!db.find(u => u.target === mobile)) {
+            db.push({
+                target: mobile,
+                name: name,
+                blood: blood,
+                phone: mobile,
+                availability: true
+            });
+            localStorage.setItem('bf_database', JSON.stringify(db));
+        }
+
+        const registeredUsers = JSON.parse(localStorage.getItem('bf_registered_users') || '[]');
+        if (!registeredUsers.includes(mobile)) {
+            registeredUsers.push(mobile);
+            localStorage.setItem('bf_registered_users', JSON.stringify(registeredUsers));
+        }
+
+        // Set session
+        localStorage.setItem('bf_session', JSON.stringify({
+            name:      name,
+            phone:     mobile,
+            blood:     blood,
+            verified:  true,
+            loginTime: Date.now()
+        }));
+        localStorage.setItem('userName', name);
+        localStorage.setItem('userBloodGroup', blood);
+        localStorage.setItem('userMobile', mobile);
+
         document.getElementById('step-kyc').classList.add('step-hidden');
         setTimeout(() => {
             document.getElementById('step-success').classList.remove('step-hidden');

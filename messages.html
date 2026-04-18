@@ -7,10 +7,6 @@
     <title>Messages | Blood Finder</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-        <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
-        <script src="api.js"></script>
-        <script src="socket.js"></script>
-        <script src="logout.js"></script>
     <style>
         .messages-container {
             max-width: 800px;
@@ -108,7 +104,7 @@
             <li><a href="messages.html" class="active">Messages</a></li>
             <li><a href="index.html#search-donors">Emergency Search</a></li>
         </ul>
-        <button class="btn-secondary" onclick="confirmLogout()">Logout</button>
+        <button class="btn-secondary" onclick="handleLogout()">Logout</button>
     </nav>
 
     <div class="messages-container">
@@ -163,9 +159,10 @@
             // Auto-open chat if coming via redirect parameter
             const params = new URLSearchParams(window.location.search);
             const chatToOpen = params.get('chat');
+            const mobileToOpen = params.get('mobile');
             if (chatToOpen) {
                 window.history.replaceState({}, document.title, "messages.html");
-                openChat(chatToOpen);
+                openChat(chatToOpen, mobileToOpen);
             }
         });
     </script>

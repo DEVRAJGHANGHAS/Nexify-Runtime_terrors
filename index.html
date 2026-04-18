@@ -13,11 +13,9 @@
         rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <!-- Socket.IO client for real-time location streaming -->
+    <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
-    <script src="api.js"></script>
-    <script src="socket.js"></script>
-    <script src="logout.js"></script>
 
     <style>
         /* ═══════════════════════════════════════
@@ -984,6 +982,57 @@
             box-shadow: 0 8px 30px rgba(255, 143, 163, 0.15);
         }
 
+        /* ── Live badge ── */
+        #bfLiveBadge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: rgba(52, 199, 89, 0.12);
+            color: #16a34a;
+            border: 1px solid rgba(52, 199, 89, 0.3);
+            border-radius: 20px;
+            padding: 3px 12px;
+            letter-spacing: 0.02em;
+            transition: opacity 0.4s;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+
+        /* ── User location dot pulse ── */
+        @keyframes bfPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.5);
+            }
+
+            70% {
+                box-shadow: 0 0 0 12px rgba(0, 122, 255, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0);
+            }
+        }
+
+        /* ── Live status bar ── */
+        #bfStatusBar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+            min-height: 22px;
+        }
+
+        #bfStatusBar .bf-coord {
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.04);
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
         /* ── Responsive ── */
         @media (max-width: 900px) {
             .impact-grid {
@@ -1025,6 +1074,8 @@
 
 <body>
     <!-- Cursor glow -->
+    <canvas id="particleCanvas"
+        style="position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:0;"></canvas>
     <div class="cursor-glow" id="cursorGlow"></div>
 
     <!-- ══════════════════════════════
@@ -1274,7 +1325,7 @@
     <section id="search-donors" class="glass-section">
         <div class="section-header reveal">
             <h2>Emergency <span>Search</span></h2>
-            <p>Find verified donors closest to your current location.</p>
+            <p>Find verified donors closest to your real-time GPS location.</p>
         </div>
         <div class="search-container glass-panel reveal">
             <div class="search-steps">
@@ -1283,36 +1334,54 @@
                 <div class="search-step-dot" id="sdot3"></div>
             </div>
             <form id="searchForm" class="search-form">
-                <div class="form-group">
-                    <label for="bloodGroup">Select Blood Group Needed</label>
-                    <select id="bloodGroup" required onchange="searchStepActive(2)">
-                        <option value="" disabled selected>Select Blood Group</option>
-                        <option value="A+">A+</option>
-                        <option value="A-">A−</option>
-                        <option value="B+">B+</option>
-                        <option value="B-">B−</option>
-                        <option value="O+">O+</option>
-                        <option value="O-">O−</option>
-                        <option value="AB+">AB+</option>
-                        <option value="AB-">AB−</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="location">Hospital / Location</label>
-                    <div class="input-with-icon">
-                        <input type="text" id="location" placeholder="e.g. AIIMS Delhi" required
-                            oninput="searchStepActive(3)">
-                        <button type="button" class="gps-btn" id="gpsBtn" title="Use GPS">📍</button>
+                <div style="display: flex; gap: 15px; width: 100%; margin-bottom: 15px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label for="bloodGroup">Select Blood Group Needed</label>
+                        <select id="bloodGroup" required onchange="searchStepActive(2)">
+                            <option value="" disabled selected>Select Blood Group</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A−</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B−</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O−</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB−</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="width: 140px; margin-bottom: 0;">
+                        <label for="searchRadius">Search Radius</label>
+                        <select id="searchRadius" required onchange="searchStepActive(2)">
+                            <option value="1000">1 km</option>
+                            <option value="5000">5 km</option>
+                            <option value="8000">8 km</option>
+                            <option value="10000" selected>10 km</option>
+                            <option value="20000">20 km</option>
+                            <option value="50000">50 km</option>
+                            <option value="40000000">Infinite</option>
+                        </select>
                     </div>
                 </div>
-                <button type="submit" class="btn-primary search-btn" style="border-radius:14px;">
+                <div class="form-group">
+                    <label for="location">
+                        Your Location
+                        <span id="bfLiveBadge" style="opacity:0.4;">🟢 0 live</span>
+                    </label>
+                    <div class="input-with-icon">
+                        <input type="text" id="location" placeholder="Click 📍 to detect GPS automatically"
+                            oninput="searchStepActive(3)" readonly style="cursor:default;background:rgba(0,0,0,0.02);">
+                        <button type="button" class="gps-btn" id="gpsBtn" title="Detect my GPS location">📍</button>
+                    </div>
+                    <div id="bfStatusBar"></div>
+                </div>
+                <button type="submit" class="btn-primary search-btn" id="scanBtn" style="border-radius:14px;">
                     🔍 Scan for Donors
                 </button>
             </form>
 
             <div id="searchResults" class="search-results hidden"></div>
-            <div id="map" class="hidden"
-                style="height:300px;width:100%;border-radius:14px;margin-top:20px;border:1px solid var(--glass-border);z-index:1;">
+            <div id="map"
+                style="display:none;height:380px;width:100%;border-radius:14px;margin-top:20px;border:1px solid var(--glass-border);z-index:1;">
             </div>
         </div>
     </section>
@@ -1397,14 +1466,16 @@
     <section id="register" class="glass-section alt">
         <div class="section-header reveal">
             <h2>Be a <span>Hero</span></h2>
-            <p>Register as a certified donor. OTP verification required.</p>
+            <p>Register as a certified donor. Verified via SMS or Email OTP.</p>
         </div>
         <div class="register-container glass-panel reveal">
             <form id="registerForm" class="register-form">
+
+                <!-- Name + Blood Group -->
                 <div class="form-row">
                     <div class="form-group">
                         <label for="regName">Full Name</label>
-                        <input type="text" id="regName" placeholder="John Doe" required>
+                        <input type="text" id="regName" placeholder="e.g. Rahul Sharma" required>
                     </div>
                     <div class="form-group">
                         <label for="regBg">Blood Group</label>
@@ -1421,13 +1492,40 @@
                         </select>
                     </div>
                 </div>
+
+                <!-- Channel Tabs -->
                 <div class="form-group">
-                    <label for="regPhone">Phone Number</label>
-                    <div class="phone-input">
-                        <span class="country-code">🇮🇳 +91</span>
-                        <input type="tel" id="regPhone" placeholder="9999999999" pattern="[0-9]{10}" required>
+                    <label>Verify via</label>
+                    <div
+                        style="display:flex;gap:0;border-radius:12px;overflow:hidden;border:1.5px solid var(--glass-border);margin-top:6px;">
+                        <button type="button" id="tabSms" onclick="switchOtpChannel('sms')"
+                            style="flex:1;padding:11px;border:none;font-family:var(--font-stack);font-size:0.88rem;font-weight:700;cursor:pointer;transition:all .2s;background:linear-gradient(135deg,#D62839,#ff4d6d);color:#fff;">
+                            📱 SMS
+                        </button>
+                        <button type="button" id="tabEmail" onclick="switchOtpChannel('email')"
+                            style="flex:1;padding:11px;border:none;font-family:var(--font-stack);font-size:0.88rem;font-weight:600;cursor:pointer;transition:all .2s;background:rgba(0,0,0,0.03);color:var(--text-muted);">
+                            📧 Email
+                        </button>
                     </div>
                 </div>
+
+                <!-- Phone field -->
+                <div id="fieldSms" class="form-group">
+                    <label for="regPhone">Mobile Number</label>
+                    <div class="phone-input">
+                        <span class="country-code">🇮🇳 +91</span>
+                        <input type="tel" id="regPhone" placeholder="10-digit number" pattern="[0-9]{10}" maxlength="10"
+                            required>
+                    </div>
+                </div>
+
+                <!-- Email field (hidden by default) -->
+                <div id="fieldEmail" class="form-group" style="display:none;">
+                    <label for="regEmail">Email Address</label>
+                    <input type="email" id="regEmail" placeholder="you@gmail.com">
+                </div>
+
+                <!-- Availability toggle -->
                 <div class="form-group toggle-group">
                     <label class="switch">
                         <input type="checkbox" id="regAvailability" checked>
@@ -1435,19 +1533,47 @@
                     </label>
                     <span class="toggle-label">I am currently available to donate</span>
                 </div>
-                <button type="button" id="sendOtpBtn" class="btn-primary" style="border-radius:14px;">Send OTP</button>
+
+                <!-- Send OTP -->
+                <button type="button" id="sendOtpBtn" class="btn-primary" style="border-radius:14px;">📩 Send
+                    OTP</button>
+
+                <!-- OTP Entry -->
                 <div id="otpSection" class="hidden otp-section" style="margin-top:16px;">
+                    <div id="otpDevHint" style="display:none;font-size:0.82rem;padding:10px 14px;background:rgba(214,40,57,0.07);
+                               border:1px solid rgba(214,40,57,0.18);border-radius:10px;margin-bottom:14px;
+                               color:var(--primary-red);font-weight:600;text-align:center;"></div>
                     <div class="form-group">
-                        <label for="otpCode">Enter OTP (use 1234)</label>
-                        <input type="text" id="otpCode" placeholder="4-digit code" maxlength="4">
+                        <label id="otpCodeLabel" for="otpCode">Enter 6-digit OTP</label>
+                        <input type="text" id="otpCode" placeholder="• • • • • •" maxlength="6" inputmode="numeric"
+                            autocomplete="one-time-code"
+                            style="letter-spacing:10px;font-size:1.5rem;text-align:center;font-weight:800;padding:14px;">
                     </div>
-                    <button type="submit" class="btn-primary confirm-btn" style="border-radius:14px;">Verify & Register
-                        →</button>
+                    <button type="submit" id="verifyRegisterBtn" class="btn-primary confirm-btn"
+                        style="border-radius:14px;">
+                        Verify &amp; Register →
+                    </button>
                 </div>
             </form>
         </div>
     </section>
 
+    <script>
+        function switchOtpChannel(ch) {
+            document.getElementById('fieldSms').style.display = ch === 'sms' ? '' : 'none';
+            document.getElementById('fieldEmail').style.display = ch === 'email' ? '' : 'none';
+            var tabActive = 'linear-gradient(135deg,#D62839,#ff4d6d)';
+            var tabInactive = 'rgba(0,0,0,0.03)';
+            document.getElementById('tabSms').style.background = ch === 'sms' ? tabActive : tabInactive;
+            document.getElementById('tabSms').style.color = ch === 'sms' ? '#fff' : 'var(--text-muted)';
+            document.getElementById('tabEmail').style.background = ch === 'email' ? tabActive : tabInactive;
+            document.getElementById('tabEmail').style.color = ch === 'email' ? '#fff' : 'var(--text-muted)';
+            document.getElementById('regPhone').required = (ch === 'sms');
+            var emailEl = document.getElementById('regEmail');
+            if (emailEl) emailEl.required = (ch === 'email');
+        }
+        switchOtpChannel('sms');
+    </script>
     <!-- ══════════════════════════════
          FOOTER
     ══════════════════════════════ -->
@@ -1552,6 +1678,7 @@
          SCRIPTS
     ══════════════════════════════ -->
     <script src="app.js"></script>
+    <script src="location.js"></script>
     <script>
         /* \u2500\u2500 Navbar: session-aware auth buttons \u2500\u2500 */
         (function () {
@@ -1566,7 +1693,6 @@
                     <span style="font-size:0.88rem;font-weight:500;color:var(--text-muted);">Hi, ${first} 👋</span>
                     <button class="btn-primary" style="border-radius:50px;font-size:0.88rem;padding:8px 18px;" onclick="window.location.href='dashboard.html'">Dashboard →</button>
                     <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#D62839,#ff4d6d);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.92rem;color:#fff;cursor:pointer;box-shadow:0 0 10px rgba(214,40,57,0.3);" onclick="window.location.href='dashboard.html'" title="Go to Dashboard">${initial}</div>
-                    <button class="btn-secondary" style="border-radius:50px;font-size:0.88rem;padding:8px 18px;margin-left:5px;" onclick="confirmLogout()" title="Logout">🚪</button>
                 `;
             } else {
                 area.innerHTML = `
@@ -1582,6 +1708,140 @@
             glow.style.left = e.clientX + 'px';
             glow.style.top = e.clientY + 'px';
         });
+
+        /* ── GPS Button → real location API ── */
+        document.getElementById('gpsBtn')?.addEventListener('click', () => {
+            const locInput = document.getElementById('location');
+            if (window.BFLocation) {
+                BFLocation.handleGpsButton(locInput);
+                searchStepActive(3);
+            }
+        });
+
+        /* ── Interactive Particle Canvas ── */
+        (function () {
+            const canvas = document.getElementById('particleCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let particlesArray = [];
+            const mouse = { x: null, y: null, radius: 150 };
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                initParticles();
+            }
+            window.addEventListener('resize', resizeCanvas);
+
+            window.addEventListener('mousemove', function (event) {
+                mouse.x = event.clientX;
+                mouse.y = event.clientY;
+            });
+            window.addEventListener('mouseout', function () {
+                mouse.x = null;
+                mouse.y = null;
+            });
+
+            class Particle {
+                constructor(x, y, dx, dy, size, color) {
+                    this.x = x; this.y = y;
+                    this.dx = dx; this.dy = dy;
+                    this.size = size; this.color = color;
+                }
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                }
+                update() {
+                    if (this.x > canvas.width || this.x < 0) this.dx = -this.dx;
+                    if (this.y > canvas.height || this.y < 0) this.dy = -this.dy;
+
+                    let interact = false;
+                    if (mouse.x != null) {
+                        let dx = mouse.x - this.x;
+                        let dy = mouse.y - this.y;
+                        let distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance < mouse.radius) {
+                            interact = true;
+                            // Move particles towards cursor slowly (attraction)
+                            this.x += dx * 0.02;
+                            this.y += dy * 0.02;
+                        }
+                    }
+                    if (!interact) {
+                        this.x += this.dx;
+                        this.y += this.dy;
+                    }
+                    this.draw();
+                }
+            }
+
+            function initParticles() {
+                particlesArray = [];
+                let numberOfParticles = (canvas.height * canvas.width) / 12000;
+                for (let i = 0; i < numberOfParticles; i++) {
+                    let size = (Math.random() * 2.5) + 1;
+                    let x = Math.random() * innerWidth;
+                    let y = Math.random() * innerHeight;
+                    let dx = (Math.random() * 1.5) - 0.75;
+                    let dy = (Math.random() * 1.5) - 0.75;
+                    let color = 'rgba(214, 40, 57, 0.4)';
+                    particlesArray.push(new Particle(x, y, dx, dy, size, color));
+                }
+            }
+
+            function animateParticles() {
+                requestAnimationFrame(animateParticles);
+                ctx.clearRect(0, 0, innerWidth, innerHeight);
+
+                for (let i = 0; i < particlesArray.length; i++) {
+                    particlesArray[i].update();
+                }
+                // Draw connecting lines
+                for (let a = 0; a < particlesArray.length; a++) {
+                    for (let b = a; b < particlesArray.length; b++) {
+                        let dx = particlesArray[a].x - particlesArray[b].x;
+                        let dy = particlesArray[a].y - particlesArray[b].y;
+                        let distance = dx * dx + dy * dy;
+                        if (distance < 12000) {
+                            let opacity = 1 - (distance / 12000);
+                            ctx.strokeStyle = 'rgba(214, 40, 57, ' + (opacity * 0.15) + ')';
+                            ctx.lineWidth = 1;
+                            ctx.beginPath();
+                            ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
+                            ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+            resizeCanvas();
+            animateParticles();
+        })();
+
+        /* ── Alert hook for map popup buttons ── */
+        window.__bfAlert = function (donorName, btn) {
+            if (!isLoggedIn()) { openAuthModal(); return; }
+            if (btn) {
+                btn.textContent = 'Sending...';
+                btn.disabled = true;
+                btn.style.opacity = '0.7';
+            }
+            setTimeout(() => {
+                if (btn) {
+                    btn.innerHTML = '💬 Chat';
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.style.background = '#007AFF';
+                    btn.style.color = '#fff';
+                    btn.style.borderColor = '#007AFF';
+                    btn.onclick = () => openChat(donorName);
+                }
+                showToast(`🩸 Secure alert sent to ${donorName}!`);
+            }, 1000);
+        };
 
         /* ── Navbar scroll state ── */
         const navbar = document.getElementById('navbar');
@@ -1658,6 +1918,44 @@
                 d.classList.toggle('active', i < n);
             });
         }
+
+        /* ── Override search form — real API ── */
+        document.getElementById('searchForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const bloodGroup = document.getElementById('bloodGroup').value;
+            const radiusStr = document.getElementById('searchRadius')?.value || '10000';
+            const scanBtn = document.getElementById('scanBtn');
+            const locInput = document.getElementById('location');
+            const statusBar = document.getElementById('bfStatusBar');
+
+            if (!bloodGroup) { showToast('Please select a blood group first'); return; }
+
+            // Button loading state
+            scanBtn.innerHTML = '<span class="radar-spinner" style="width:18px;height:18px;border-width:2px;margin-right:8px;"></span>Scanning...';
+            scanBtn.disabled = true;
+
+            if (statusBar) statusBar.innerHTML = '<span style="color:var(--primary-red);">📡 Detecting GPS position...</span>';
+
+            // Show map container early
+            const mapEl = document.getElementById('map');
+            mapEl.style.display = 'block';
+
+            try {
+                await window.BFLocation?.search(bloodGroup, locInput, radiusStr);
+
+                // Update status bar with coords
+                if (statusBar && BFLocation.userLat) {
+                    statusBar.innerHTML = `
+                        <span>📍 Scanning from</span>
+                        <span class="bf-coord">${BFLocation.userLat.toFixed(4)}, ${BFLocation.userLng.toFixed(4)}</span>
+                        <span>· radius ${parseInt(radiusStr) >= 40000000 ? 'Infinite' : (parseInt(radiusStr) / 1000) + ' km'} · auto-refreshes every 30s</span>`;
+                }
+            } finally {
+                scanBtn.innerHTML = '🔍 Scan for Donors';
+                scanBtn.disabled = false;
+                searchStepActive(3);
+            }
+        });
 
         /* ── Session helpers ── */
         function getSession() {

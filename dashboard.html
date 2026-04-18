@@ -7,10 +7,9 @@
     <title>Blood Finder - Donor Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-        <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
-        <script src="api.js"></script>
-        <script src="socket.js"></script>
-        <script src="logout.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
         .dashboard-container {
             padding: 100px 5% 40px;
@@ -221,13 +220,13 @@
             <li><a href="messages.html">Messages</a></li>
             <li><a href="index.html#search-donors">Emergency Search</a></li>
         </ul>
-        <button class="btn-secondary" onclick="confirmLogout()">Logout</button>
+        <button class="btn-secondary" onclick="handleLogout()">Logout</button>
     </nav>
 
     <div class="dashboard-container">
         <div class="welcome-section">
             <div class="welcome-text">
-                <h2>Welcome Back, <span style="color: var(--primary-red);">Hero</span>!</h2>
+                <h2>Welcome Back, <span id="userNameDisplay" style="color: var(--primary-red);">Hero</span>!</h2>
                 <p>Your dashboard and reward center.</p>
             </div>
             <div class="points-badge" id="pointsBadge">
@@ -238,8 +237,24 @@
         <div class="dash-grid">
             <!-- Profile & Health -->
             <div class="dash-card glass-panel" id="profileCard">
-                <h3>Profile & Health</h3>
+                <h3>Profile Details & Health</h3>
                 <form id="profileForm" style="display: flex; flex-direction: column; gap: 15px; margin-top: 10px;">
+                    <div>
+                        <label for="userName" style="display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem;">Full Name</label>
+                        <input type="text" id="userName" placeholder="Your Name" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.8); font-family: var(--font-stack);">
+                    </div>
+                    <div>
+                        <label for="userEmail" style="display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem;">Email Address</label>
+                        <input type="email" id="userEmail" placeholder="your@email.com" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.8); font-family: var(--font-stack);">
+                    </div>
+                    <div>
+                        <label for="userMobile" style="display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem;">Mobile Number</label>
+                        <input type="tel" id="userMobile" placeholder="10-digit number" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.8); font-family: var(--font-stack);">
+                    </div>
+                    <div>
+                        <label for="userAddress" style="display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem;">Address</label>
+                        <input type="text" id="userAddress" placeholder="Your full address" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.8); font-family: var(--font-stack);">
+                    </div>
                     <div>
                         <label for="userBloodGroup"
                             style="display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem;">Your
@@ -303,6 +318,93 @@
                     <p style="color: var(--text-muted); font-size: 0.9rem;">Please save your Profile with a Blood Group
                         to see matching requests.</p>
                 </div>
+            </div>
+
+            <!-- Publish Blood Need -->
+            <div class="dash-card glass-panel" id="publishRequestCard">
+                <h3>Request Blood Near You</h3>
+                <form id="publishForm" style="display: flex; flex-direction: column; gap: 15px; margin-top: 10px;">
+                    <div>
+                        <label for="reqBloodGroup" style="display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem;">Blood Group Needed</label>
+                        <select id="reqBloodGroup" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.8); font-family: var(--font-stack);">
+                            <option value="" disabled selected>Select Blood Group</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="Any">Any</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem;">Hospital / Location & Radius</label>
+                        <div id="reqMap" style="height: 200px; border-radius: 8px; border: 1px solid var(--glass-border); margin-bottom: 10px; z-index: 1;"></div>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="reqLocation" placeholder="Selected Location" readonly required style="flex: 2; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.8); font-family: var(--font-stack);">
+                            <select id="reqRadius" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.8); font-family: var(--font-stack);">
+                                <option value="5">5 km</option>
+                                <option value="10" selected>10 km</option>
+                                <option value="25">25 km</option>
+                                <option value="50">50 km</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="reqUrgency" style="display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem;">Urgency Level</label>
+                        <select id="reqUrgency" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.8); font-family: var(--font-stack);">
+                            <option value="Critical">Critical - Immediate</option>
+                            <option value="High">High - Within 12 Hours</option>
+                            <option value="Medium">Medium - Within 24 Hours</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary" style="margin-top: 5px; padding: 10px; background: linear-gradient(135deg, #FF9500, #FFCC00); color: #8B6508;">Broadcast Need</button>
+                </form>
+            </div>
+
+            <!-- Offer Blood / Publish Availability -->
+            <div class="dash-card glass-panel" id="offerBloodCard">
+                <h3>Offer to Donate Blood</h3>
+                <form id="offerForm" style="display: flex; flex-direction: column; gap: 15px; margin-top: 10px;">
+                    <div>
+                        <label for="offerBloodGroup" style="display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem;">Your Blood Group</label>
+                        <select id="offerBloodGroup" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.8); font-family: var(--font-stack);">
+                            <option value="" disabled selected>Select Blood Group</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem;">Your Location / Area & Radius</label>
+                        <div id="offerMap" style="height: 200px; border-radius: 8px; border: 1px solid var(--glass-border); margin-bottom: 10px; z-index: 1;"></div>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="offerLocation" placeholder="Selected Location" readonly required style="flex: 2; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.8); font-family: var(--font-stack);">
+                            <select id="offerRadius" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.8); font-family: var(--font-stack);">
+                                <option value="5">5 km</option>
+                                <option value="10" selected>10 km</option>
+                                <option value="25">25 km</option>
+                                <option value="50">50 km</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="offerAvailability" style="display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem;">Availability</label>
+                        <select id="offerAvailability" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.8); font-family: var(--font-stack);">
+                            <option value="Now">Available Now</option>
+                            <option value="Today">Available Today</option>
+                            <option value="Weekend">Available This Weekend</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary" style="margin-top: 5px; padding: 10px; background: linear-gradient(135deg, #34C759, #28A745); color: #fff;">Publish Availability</button>
+                </form>
             </div>
 
             <!-- Rewards -->
