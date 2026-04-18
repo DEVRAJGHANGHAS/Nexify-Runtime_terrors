@@ -1,3 +1,8 @@
+// Smart Server URL Detection
+const SERVER_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3000' 
+    ? 'http://localhost:3000' 
+    : (window.location.protocol === 'file:' ? 'http://localhost:3000' : '');
+
 // Smooth Scrolling for Nav Links
 function scrollToSection(id) {
     const element = document.getElementById(id);
@@ -47,10 +52,10 @@ function handleLogout() {
         // Fall back to sync XMLHttpRequest if sendBeacon not available
         const blob = new Blob([JSON.stringify(progressData)], { type: 'application/json' });
         if (navigator.sendBeacon) {
-            navigator.sendBeacon('/api/user/save-progress', blob);
+            navigator.sendBeacon(SERVER_URL + '/api/user/save-progress', blob);
         } else {
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/api/user/save-progress', false); // sync
+            xhr.open('POST', SERVER_URL + '/api/user/save-progress', false); // sync
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.send(JSON.stringify(progressData));
         }
@@ -130,7 +135,7 @@ function syncChatsToDb() {
     if (!mobile && !email) return;
 
     const chats = JSON.parse(localStorage.getItem('bf_chats') || '{}');
-    fetch('/api/user/save-progress', {
+    fetch(SERVER_URL + '/api/user/save-progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -151,7 +156,7 @@ function syncChatsToDb() {
 // ── Restore all user progress from DB after login ──
 async function restoreUserProgress(mobile, email) {
     try {
-        const res = await fetch('/api/user/load-progress', {
+        const res = await fetch(SERVER_URL + '/api/user/load-progress', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ mobile, email })
@@ -187,7 +192,7 @@ let _currentChatMobile = null;
 let globalSocket = null;
 
 if (typeof io !== 'undefined') {
-    globalSocket = io('');
+    globalSocket = io(SERVER_URL);
     
     // Listen for incoming global chat messages
     globalSocket.on('chat_received', (msgData) => {
@@ -348,7 +353,7 @@ document.getElementById('sendOtpBtn')?.addEventListener('click', async () => {
     btn.disabled = true;
 
     try {
-        const res  = await fetch('/api/otp/send', {
+        const res  = await fetch(SERVER_URL + '/api/otp/send', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ to: target })
         });
@@ -407,7 +412,7 @@ async function handleResendOtp() {
     if (!_otpTarget) return;
     btn.innerHTML = 'Resending...'; btn.disabled = true;
     try {
-        const res  = await fetch('/api/otp/resend', {
+        const res  = await fetch(SERVER_URL + '/api/otp/resend', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ to: _otpTarget })
         });
@@ -446,7 +451,7 @@ document.getElementById('registerForm')?.addEventListener('submit', async (e) =>
     submitBtns.forEach(b => { b.innerHTML = 'Verifying...'; b.disabled = true; });
 
     try {
-        const verifyRes  = await fetch('/api/otp/verify', {
+        const verifyRes  = await fetch(SERVER_URL + '/api/otp/verify', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ to: _otpTarget || phone, code })
         });
@@ -465,7 +470,7 @@ document.getElementById('registerForm')?.addEventListener('submit', async (e) =>
 
         // Register as donor
         if (blood) {
-            fetch('/api/donors', {
+            fetch(SERVER_URL + '/api/donors', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ bloodType: blood, name, availability: avail !== false })

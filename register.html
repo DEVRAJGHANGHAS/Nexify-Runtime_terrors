@@ -675,6 +675,10 @@
     <div id="toast" class="toast"></div>
 
     <script>
+        const SERVER_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3000' 
+            ? 'http://localhost:3000' 
+            : (window.location.protocol === 'file:' ? 'http://localhost:3000' : '');
+
         // ===== TOAST =====
         function showToast(msg) {
             const t = document.getElementById('toast');
@@ -820,7 +824,7 @@
             // ── CHECK DATABASE FOR DUPLICATES ──
             try {
                 // Check mobile
-                const mobileCheck = await fetch('/api/user/check-duplicate', {
+                const mobileCheck = await fetch(SERVER_URL + '/api/user/check-duplicate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ field: 'mobile', value: mobile })
@@ -828,7 +832,7 @@
                 const mobileData = await mobileCheck.json();
 
                 // Check email
-                const emailCheck = await fetch('/api/user/check-duplicate', {
+                const emailCheck = await fetch(SERVER_URL + '/api/user/check-duplicate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ field: 'email', value: email })
@@ -933,7 +937,7 @@
             if (mobile.length < 10) return;
             
             try {
-                const res = await fetch('/api/user/check-duplicate', {
+                const res = await fetch(SERVER_URL + '/api/user/check-duplicate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ field: 'mobile', value: mobile })
@@ -955,7 +959,7 @@
             if (!email || !email.includes('@')) return;
             
             try {
-                const res = await fetch('/api/user/check-duplicate', {
+                const res = await fetch(SERVER_URL + '/api/user/check-duplicate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ field: 'email', value: email })
@@ -1002,12 +1006,56 @@
             btn.innerHTML = `<div class="spinner"></div> Verifying...`;
             btn.disabled = true;
 
-            setTimeout(() => {
-                showToast('✅ OTP Verified! Now verify your identity.');
-                goToStep('step-reg-otp', 'step-kyc', 3);
-                btn.innerHTML = 'Create Account →';
-                btn.disabled = false;
-            }, 1300);
+            setTimeout(async () => {
+                showToast('✅ OTP Verified! Saving account...');
+                
+                // Directly call the registration logic
+                const name  = document.getElementById('regName')?.value?.trim() || 'New Donor';
+                const dob   = document.getElementById('regDOB')?.value || '';
+                const blood = document.getElementById('regBlood')?.value || 'B+';
+                const mobile = document.getElementById('regMobile')?.value?.trim() || '';
+                const email = document.getElementById('regEmail')?.value?.trim() || '';
+
+                try {
+                    const res = await fetch(SERVER_URL + '/api/user/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, dob, mobile, email, blood_group: blood })
+                    });
+                    const data = await res.json();
+
+                    if (!data.success) {
+                        btn.innerHTML = 'Verify OTP';
+                        btn.disabled = false;
+                        showToast(data.message || '🚫 Registration failed!');
+                        return;
+                    }
+
+                    // Save session
+                    localStorage.setItem('bf_session', JSON.stringify({
+                        name, dob, phone: mobile, email, blood, verified: true, loginTime: Date.now()
+                    }));
+                    localStorage.setItem('userName', name);
+                    localStorage.setItem('userDOB', dob);
+                    localStorage.setItem('userBloodGroup', blood);
+                    localStorage.setItem('userMobile', mobile);
+                    localStorage.setItem('userEmail', email);
+
+                    showToast('✅ Account created! Redirecting to Dashboard...');
+                    
+                    // Show success step first, then redirect
+                    goToStep('step-reg-otp', 'step-success', 3);
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 2000);
+
+                } catch (err) {
+                    console.error('Registration error:', err);
+                    btn.innerHTML = 'Verify OTP';
+                    btn.disabled = false;
+                    showToast('⚠️ Server error. Please try again.');
+                }
+            }, 1000);
         }
 
         function resendRegOtp() {
@@ -1060,7 +1108,7 @@
 
             try {
                 // ── SAVE TO SQL DATABASE ──
-                const res = await fetch('/api/user/register', {
+                const res = await fetch(SERVER_URL + '/api/user/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

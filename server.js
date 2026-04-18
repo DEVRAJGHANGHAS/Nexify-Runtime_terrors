@@ -1,14 +1,12 @@
-/**
- * Blood Finder — Backend Server with SQLite Database
- * Handles user registration, login validation, and duplicate checking.
- */
-
 const express = require('express');
 const cors = require('cors');
-const Database = require('better-sqlite3');
 const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
+
+// Import modular services
+const db = require('./services/db');
+const otpService = require('./services/otpService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,19 +18,19 @@ const activeUsers = new Map(); // socket.id -> { mobile, name, lat, lng }
 
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
   var R = 6371; // Radius of the earth in km
-  var dLat = deg2rad(lat2-lat1);
-  var dLon = deg2rad(lon2-lon1); 
-  var a = Math.sin(dLat/2) * Math.sin(dLat/2) + 
-          Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
-          Math.sin(dLon/2) * Math.sin(dLon/2); 
-  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-  return R * c; 
+  var dLat = deg2rad(lat2 - lat1);
+  var dLon = deg2rad(lon2 - lon1);
+  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
-function deg2rad(deg) { return deg * (Math.PI/180); }
+function deg2rad(deg) { return deg * (Math.PI / 180); }
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
-  
+
   socket.on('update_location', (data) => {
     activeUsers.set(socket.id, { ...data, socketId: socket.id });
   });
@@ -44,6 +42,10 @@ io.on('connection', (socket) => {
         let dist = getDistanceFromLatLonInKm(data.lat, data.lng, user.lat, user.lng);
         if (dist <= data.radius) {
           io.to(id).emit('blood_alert', { ...data, distance: dist.toFixed(1) });
+          // Send background SMS notification
+          if (user.mobile) {
+            otpService.sendRequestNotification(user.mobile, data.bg, user.name || 'a nearby hospital');
+          }
         }
       }
     }
@@ -56,6 +58,10 @@ io.on('connection', (socket) => {
         let dist = getDistanceFromLatLonInKm(data.lat, data.lng, user.lat, user.lng);
         if (dist <= data.radius) {
           io.to(id).emit('donor_available', { ...data, distance: dist.toFixed(1) });
+          // Send background SMS notification
+          if (user.mobile) {
+            otpService.sendDonorResponseNotification(user.mobile, data.name || 'A Donor');
+          }
         }
       }
     }
@@ -79,48 +85,7 @@ io.on('connection', (socket) => {
 app.use(cors());
 app.use(express.json({ limit: '5mb' })); // increased for chat history
 
-// ─── SQLite Database Setup ───────────────────────────────────
-const db = new Database(path.join(__dirname, 'bloodfinder.db'), { verbose: console.log });
-
-// Enable WAL mode for better performance
-db.pragma('journal_mode = WAL');
-
-// Create users table if it doesn't exist
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    name        TEXT    NOT NULL,
-    mobile      TEXT    NOT NULL UNIQUE,
-    email       TEXT    NOT NULL UNIQUE,
-    blood_group TEXT    DEFAULT '',
-    created_at  TEXT    DEFAULT (datetime('now'))
-  );
-`);
-
-// Add extra profile columns (safe if already exist)
-const extraCols = [
-  { name: 'dob',                type: 'TEXT DEFAULT ""' },
-  { name: 'address',            type: 'TEXT DEFAULT ""' },
-  { name: 'last_donated',       type: 'TEXT DEFAULT ""' },
-  { name: 'medical_conditions', type: 'TEXT DEFAULT ""' },
-];
-for (const col of extraCols) {
-  try { db.exec(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type};`); }
-  catch (e) { /* column already exists — ignore */ }
-}
-
-// Create user_progress table — stores chats & any extra JSON per user
-db.exec(`
-  CREATE TABLE IF NOT EXISTS user_progress (
-    user_id     INTEGER PRIMARY KEY,
-    chats       TEXT    DEFAULT '{}',
-    extra_data  TEXT    DEFAULT '{}',
-    updated_at  TEXT    DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES users(id)
-  );
-`);
-
-console.log('✅ SQLite database ready — users + user_progress tables initialized');
+console.log('✅ Server core ready with modular services');
 
 // ─── API: Check if user exists (by mobile or email) ─────────
 app.post('/api/user/check', (req, res) => {
@@ -208,6 +173,34 @@ app.post('/api/user/register', (req, res) => {
     console.error('Registration error:', err);
     return res.json({ success: false, message: 'Server error during registration.' });
   }
+});
+
+// ─── API: Mock OTP Endpoints ─────────────────────────────────
+app.post('/api/otp/send', (req, res) => {
+  const { to } = req.body;
+  console.log(`[OTP] Sending mock code 1234 to ${to}`);
+  res.json({ success: true, message: 'OTP sent successfully (Mock: 1234)' });
+});
+
+app.post('/api/otp/resend', (req, res) => {
+  const { to } = req.body;
+  console.log(`[OTP] Resending mock code 1234 to ${to}`);
+  res.json({ success: true, message: 'OTP resent successfully' });
+});
+
+app.post('/api/otp/verify', (req, res) => {
+  const { to, code } = req.body;
+  if (code === '1234') {
+    res.json({ success: true, message: 'OTP verified successfully' });
+  } else {
+    res.json({ success: false, message: 'Invalid OTP code' });
+  }
+});
+
+// ─── API: Donor Endpoints ────────────────────────────────────
+app.post('/api/donors', (req, res) => {
+  // Mock success for donor registration
+  res.json({ success: true, message: 'Registered as donor' });
 });
 
 // ─── API: Login check — verify user exists in DB ─────────────
@@ -362,30 +355,30 @@ app.post('/api/user/load-progress', (req, res) => {
   return res.json({
     success: true,
     profile: {
-      name:               user.name,
-      dob:                user.dob || '',
-      mobile:             user.mobile,
-      email:              user.email,
-      blood_group:        user.blood_group,
-      address:            user.address || '',
-      last_donated:       user.last_donated || '',
+      name: user.name,
+      dob: user.dob || '',
+      mobile: user.mobile,
+      email: user.email,
+      blood_group: user.blood_group,
+      address: user.address || '',
+      last_donated: user.last_donated || '',
       medical_conditions: user.medical_conditions || ''
     },
     chats: chats
   });
 });
 
-// ─── Static file serving (AFTER API routes) ─────────────────
-app.use(express.static(path.join(__dirname)));
+// ─── Static file serving (POINT TO ROOT) ─────────────────────
+app.use(express.static(path.join(__dirname, '..')));
 
 // ─── Fallback: serve index.html for unknown routes ───────────
 app.get(/^\/(?!api).*/, (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
 // ─── Start Server ────────────────────────────────────────────
 server.listen(PORT, () => {
   console.log(`\n🩸 Blood Finder Server running at http://localhost:${PORT}`);
-  console.log(`📂 SQLite DB: ${path.join(__dirname, 'bloodfinder.db')}`);
+  console.log(`📂 SQLite DB: ${path.join(__dirname, '..', 'bloodfinder.db')}`);
   console.log(`🌐 Open http://localhost:${PORT} in your browser\n`);
 });

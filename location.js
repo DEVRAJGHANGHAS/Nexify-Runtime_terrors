@@ -18,8 +18,9 @@
 'use strict';
 
 // ── Config ───────────────────────────────────────────────────
-const BF_API   = `${window.location.origin}/api`;
-const BF_WS    = window.location.origin;
+const SERVER_URL = window.location.protocol === 'file:' ? 'http://localhost:3000' : '';
+const BF_API   = `${SERVER_URL}/api`;
+const BF_WS    = SERVER_URL;
 const DELHI    = { lat: 28.6139, lng: 77.2090 };   // fallback centre
 let RADIUS_M   = 10000;                              // 10 km default
 

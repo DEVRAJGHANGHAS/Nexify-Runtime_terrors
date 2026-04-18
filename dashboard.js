@@ -1,3 +1,8 @@
+// Smart Server URL Detection
+const SERVER_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3000' 
+    ? 'http://localhost:3000' 
+    : (window.location.protocol === 'file:' ? 'http://localhost:3000' : '');
+
 let currentPoints = 350;
 let socket;
 let reqMap, reqMarker, reqCircle;
@@ -5,7 +10,7 @@ let offerMap, offerMarker, offerCircle;
 let reqLat, reqLng, offerLat, offerLng;
 
 if (typeof io !== 'undefined') {
-    socket = io();
+    socket = io(SERVER_URL);
     
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((pos) => {
@@ -76,10 +81,10 @@ function handleLogout() {
 
         const blob = new Blob([JSON.stringify(progressData)], { type: 'application/json' });
         if (navigator.sendBeacon) {
-            navigator.sendBeacon('/api/user/save-progress', blob);
+            navigator.sendBeacon(SERVER_URL + '/api/user/save-progress', blob);
         } else {
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/api/user/save-progress', false);
+            xhr.open('POST', SERVER_URL + '/api/user/save-progress', false);
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.send(JSON.stringify(progressData));
         }
@@ -278,7 +283,7 @@ document.getElementById('profileForm').addEventListener('submit', function (e) {
 
     // ── SYNC PROFILE TO DATABASE ──
     if (mobile || email) {
-        fetch('/api/user/save-progress', {
+        fetch(SERVER_URL + '/api/user/save-progress', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

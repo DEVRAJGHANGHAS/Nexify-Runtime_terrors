@@ -926,6 +926,10 @@
 
     <script src="login.js"></script>
     <script>
+        const SERVER_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3000' 
+            ? 'http://localhost:3000' 
+            : (window.location.protocol === 'file:' ? 'http://localhost:3000' : '');
+
         // ===== PARTICLE GENERATOR =====
         function createParticles() {
             const container = document.getElementById('particles');
@@ -1043,7 +1047,7 @@
 
             // ── CHECK DATABASE: Does this user exist? ──
             try {
-                const checkRes = await fetch('/api/user/login', {
+                const checkRes = await fetch(SERVER_URL + '/api/user/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1216,7 +1220,7 @@
 
             // ── RESTORE ALL SAVED PROGRESS FROM DATABASE ──
             try {
-                const res = await fetch('/api/user/load-progress', {
+                const res = await fetch(SERVER_URL + '/api/user/load-progress', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ mobile: userObj.mobile, email: userObj.email })
